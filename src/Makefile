@@ -12,14 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+LICENSE=../third_party/Quadruple/license.m4
+QUADRUPLE_BUILDER=../third_party/Quadruple/QuadrupleBuilder.m4
+
 JAVA_TARGET=../java/quadruple-converter/src/main/java/com/google/cloud/datastore/core/quadruple/QuadrupleBuilder.java
 
 PYTHON_TARGET=../python/quadruple_builder.py
 
 all: $(JAVA_TARGET) $(PYTHON_TARGET)
 
-$(JAVA_TARGET): java/start.m4 QuadrupleBuilder.m4 java/end.m4 Makefile
-	m4 java/start.m4 QuadrupleBuilder.m4 java/end.m4 | sed -e 's/#/\/\//' > "$@"
+$(JAVA_TARGET): $(LICENSE) java/start.m4 $(QUADRUPLE_BUILDER) java/end.m4
+	m4 $^ | sed -e 's/#/\/\//' > "$@"
 
-$(PYTHON_TARGET): python/start.m4 QuadrupleBuilder.m4 Makefile
-	m4 python/start.m4 QuadrupleBuilder.m4 > "$@"
+$(PYTHON_TARGET): $(LICENSE) python/start.m4 $(QUADRUPLE_BUILDER)
+	m4 $^ > "$@"

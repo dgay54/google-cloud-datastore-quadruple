@@ -20,64 +20,9 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import math
 
 class QuadrupleBuilder(object):
-
-  @staticmethod
-  def toInt64(x):
-    i = int((x))
-    return i if i <= 0x7fffffffffffffff else i - 0x10000000000000000
 
   @staticmethod
   def parseDecimal(negative, digits, exp10):
@@ -85,20 +30,6 @@ class QuadrupleBuilder(object):
     q.parse(negative, [ord(c) - 48 for c in digits], exp10)
     return q
 
-#  Copyright 2021 M.Vokhmentsev
-#  Copyright 2025 Google LLC
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#      https://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
 
 
   # 2^192 = 6.277e57, so the 58-th digit after point may affect the result
@@ -415,7 +346,7 @@ class QuadrupleBuilder(object):
     
 
     for i in range((len((digits))) - 1, (firstDigit) - 1, -1): # digits, starting from the last
-      mantissa[0] |= int((digits[i])) << 32;
+      mantissa[0] |= (digits[i]) << 32;
       self.divBuffBy10(mantissa);
     
     return expCorr;
@@ -578,7 +509,7 @@ class QuadrupleBuilder(object):
     result = self.pack_6x32_to_3x64(self.buffer12x32, result);
 
     # result[0] is a signed int64 value stored in an uint64
-    result[0] = factor1[0] + factor2[0] + int((expCorr)); # product.exp = f1.exp + f2.exp
+    result[0] = factor1[0] + factor2[0] + (expCorr); # product.exp = f1.exp + f2.exp
     return result;
   
 

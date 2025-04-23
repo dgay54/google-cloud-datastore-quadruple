@@ -19,9 +19,9 @@ package com.google.cloud.datastore.core.quadruple;
  * and string.
  *
  * @param negative the sign of the number.
- * @param biasedExponent the biased (by 0x7FFF_FFFF) binary exponent.
- * @param mantHi the high 64 bits of the mantissa (leading 1 omitted).
- * @param mantLo the low 64 bits of the mantissa.
+ * @param biasedExponent the unsigned and biased (by 0x7FFF_FFFF) binary exponent.
+ * @param mantHi the unsigned high 64 bits of the mantissa (leading 1 omitted).
+ * @param mantLo the unsigned low 64 bits of the mantissa.
  */
 public record Quadruple(boolean negative, int biasedExponent, long mantHi, long mantLo)
     implements Comparable<Quadruple> {
@@ -29,11 +29,11 @@ public record Quadruple(boolean negative, int biasedExponent, long mantHi, long 
   public static final Quadruple POSITIVE_ZERO = new Quadruple(false, 0, 0, 0);
   public static final Quadruple NEGATIVE_ZERO = new Quadruple(true, 0, 0, 0);
   public static final Quadruple NaN =
-      new Quadruple(false, QuadrupleBuilder.EXPONENT_OF_INFINITY, 1L << 63, 0);
+      new Quadruple(false, (int) QuadrupleBuilder.EXPONENT_OF_INFINITY, 1L << 63, 0);
   public static final Quadruple NEGATIVE_INFINITY =
-      new Quadruple(true, QuadrupleBuilder.EXPONENT_OF_INFINITY, 0, 0);
+      new Quadruple(true, (int) QuadrupleBuilder.EXPONENT_OF_INFINITY, 0, 0);
   public static final Quadruple POSITIVE_INFINITY =
-      new Quadruple(false, QuadrupleBuilder.EXPONENT_OF_INFINITY, 0, 0);
+      new Quadruple(false, (int) QuadrupleBuilder.EXPONENT_OF_INFINITY, 0, 0);
 
   private static final Quadruple MIN_LONG = new Quadruple(true, bias(63), 0, 0);
   private static final Quadruple POSITIVE_ONE = new Quadruple(false, bias(0), 0, 0);
@@ -43,42 +43,120 @@ public record Quadruple(boolean negative, int biasedExponent, long mantHi, long 
     return biasedExponent - QuadrupleBuilder.EXPONENT_BIAS;
   }
 
-  public static fromLong(long value) {
-    return switch (value) {
-      case Long.MIN_VALUE -> MIN_LONG;
-      case 0 -> POSITIVE_ZERO;
-      case 1 -> POSITIVE_ONE;
-      case -1 -> NEGATIVE_ONE;
-      default -> {
-        boolean negative = value < 0;
-        if (negative) {
-          value = -value;
-        }
-        // Left-justify with the leading 1 dropped (value=0 or 1 is handled separately above, so
-        // leadingZeros+1 <= 63).
-        int leadingZeros = Long.numberOfLeadingZeros(value);
-        yield new Quaduple(negative, bias(63 - leadingZeros), value << (leadingZeros + 1), 0);
+  // Compare two quadruples, with -0 < 0, and NaNs larger than all numbers.
+  @Override
+  public int compareTo(Quadruple other) {
+    int lessThan;
+    int greaterThan;
+    if (negative) {
+      if (!other.negative) {
+        return -1;
       }
-    };
+      lessThan = 1;
+      greaterThan = -1;
+    } else {
+      if (other.negative) {
+        return 1;
+      }
+      lessThan = -1;
+      greaterThan = 1;
+    }
+    int expCompare = Integer.compareUnsigned(biasedExponent, other.biasedExponent);
+    if (expCompare < 0) {
+      return lessThan;
+    }
+    if (expCompare > 0) {
+      return greaterThan;
+    }
+    int mantHiCompare = Long.compareUnsigned(mantHi, other.mantHi);
+    if (mantHiCompare < 0) {
+      return lessThan;
+    }
+    if (mantHiCompare > 0) {
+      return greaterThan;
+    }
+    int mantLoCompare = Long.compareUnsigned(mantLo, other.mantLo);
+    if (mantLoCompare < 0) {
+      return lessThan;
+    }
+    if (mantLoCompare > 0) {
+      return greaterThan;
+    }
+    return 0;
   }
 
-  public static fromDouble(double value) {
+  public static Quadruple fromLong(long value) {
+    if (value == Long.MIN_VALUE) {
+      return MIN_LONG;
+    }
+    if (value == 0) {
+      return POSITIVE_ZERO;
+    }
+    if (value == 1) {
+      return POSITIVE_ONE;
+    }
+    if (value == -1) {
+      return NEGATIVE_ONE;
+    }
+
+    boolean negative = value < 0;
+    if (negative) {
+      value = -value;
+    }
+    // Left-justify with the leading 1 dropped - value=0 or 1 is handled separately above, so
+    // leadingZeros+1 <= 63.
+    int leadingZeros = Long.numberOfLeadingZeros(value);
+    return new Quadruple(negative, bias(63 - leadingZeros), value << (leadingZeros + 1), 0);
+  }
+
+  public static Quadruple fromDouble(double value) {
     if (Double.isNaN(value)) {
       return NaN;
     }
-    return switch (value) {
-      case Double.NEGATIVE_INFINITY -> NEGATIVE_INFINITY;
-      case Double.POSITIVE_INFINITY -> POSITIVE_INFINITY;
-      case 0 -> Double.compare(value, 0) == 0 ? POSITIVE_ZERO : NEGATIVE_ZERO;
-      default -> {
-        long bits = Double.doubleToLongBits(value);
-        long exponent = value >>> 52 & 0x7ff - 1023;
-        yield new Quadruple(value < 0, bias(exponent), exponent << 12, 0);
-      }
-    };
+    if (Double.isInfinite(value)) {
+      return value < 0 ? NEGATIVE_INFINITY : POSITIVE_INFINITY;
+    }
+    if (Double.compare(value, 0.0) == 0) {
+      return POSITIVE_ZERO;
+    }
+    if (Double.compare(value, -0.0) == 0) {
+      return NEGATIVE_ZERO;
+    }
+
+    long bits = Double.doubleToLongBits(value);
+    long mantHi = bits << 12;
+    long exponent = bits >>> 52 & 0x7ff;
+    if (exponent == 0) {
+      // subnormal - mantHi cannot be zero as that means value==+/-0
+      int leadingZeros = Long.numberOfLeadingZeros(mantHi);
+      mantHi = leadingZeros < 63 ? mantHi << (leadingZeros + 1) : 0;
+      exponent = -leadingZeros;
+    }
+    return new Quadruple(value < 0, bias((int) (exponent - 1023)), mantHi, 0);
   }
 
-  public static fromString(String s) {
+  /**
+   * Converts a decimal number to a {@link Quadruple}. The supported format (no whitespace allowed)
+   * is:
+   *
+   * <ul>
+   *   <li>NaN for Quadruple.NaN
+   *   <li>Infinity for Quadruple.POSITIVE_INFINITY
+   *   <li>-Infinity for Quadruple.NEGATIVE_INFINITY
+   *   <li>regular expression: -?[0-9]*(.[0-9]*)?(e-?[0-9]+)? - the exponent cannot be more than 9
+   *       digits, and the whole string cannot be empty
+   * </ul>
+   */
+  public static Quadruple fromString(String s) {
+    if (s.equals("NaN")) {
+      return NaN;
+    }
+    if (s.equals("-Infinity")) {
+      return NEGATIVE_INFINITY;
+    }
+    if (s.equals("Infinity")) {
+      return POSITIVE_INFINITY;
+    }
     char[] chars = s.toCharArray();
     byte[] digits = new byte[chars.length];
     int len = chars.length;
@@ -92,12 +170,12 @@ public record Quadruple(boolean negative, int biasedExponent, long mantHi, long 
     }
     int firstDigit = i;
     while (i < len && Character.isDigit(chars[i])) {
-      digits[j++] = chars[i]++ - '0';
+      digits[j++] = (byte) (chars[i++] - '0');
     }
     if (i < len && chars[i] == '.') {
-      int decimal = i++;
+      int decimal = ++i;
       while (i < len && Character.isDigit(chars[i])) {
-        digits[j++] = chars[i]++ - '0';
+        digits[j++] = (byte) (chars[i++] - '0');
       }
       exponent = decimal - i;
     }
@@ -111,19 +189,22 @@ public record Quadruple(boolean negative, int biasedExponent, long mantHi, long 
       }
       int firstExponent = i;
       while (i < len && Character.isDigit(chars[i])) {
-        exponentValue = exponentValue * 10 + chars[i]++ - '0';
+        exponentValue = exponentValue * 10 + chars[i++] - '0';
         if (i - firstExponent > 9) {
           throw new NumberFormatException("Exponent too large " + s);
         }
       }
+      if (i == firstExponent) {
+        throw new NumberFormatException("Invalid number " + s);
+      }
       exponent += exponentValue * exponentSign;
     }
-    if (i != len) {
+    if (j == 0 || i != len) {
       throw new NumberFormatException("Invalid number " + s);
     }
     byte[] digitsCopy = new byte[j];
-    System.arrayCopy(digits, 0, digitsCopy, 0, j);
-    QuadrupleBuilder parsed = QuadrupleBuilder.parse(digitsCopy, exponent);
+    System.arraycopy(digits, 0, digitsCopy, 0, j);
+    QuadrupleBuilder parsed = QuadrupleBuilder.parseDecimal(digitsCopy, exponent);
     return new Quadruple(negative, parsed.exponent, parsed.mantHi, parsed.mantLo);
   }
 

@@ -9,8 +9,13 @@ This library is derived from the string to binary floating point conversion in h
 
 ## Repository Organization
 
-The multi-language source code is in the `src` directory, and the multi-language tests are in the `test` directory. See the README.md files in those directories for more details on how the source code for each language is generated.
+The `src` directory contains the rules to generate the library in each language,
+and the `test` directory contains the tests and rules to generate the test in
+each language. See the README.md files in those directories for more details on
+how the source code for each language is generated.
 
-There is one directory per supported languages -- currently, Java and Python. The code in these directories can be re-generated following the instructions in `src/README.md` and `test/README.md`.
-
-
+`third_party/Quadruple/QuadrupleBuilder.m4` is the actual multi-language source
+code, and the per-language libraries are in per-language sub-directories of
+`third_party/Quadruple` (currently, `java` and `python`). The code in these
+directories can be re-generated following the instructions in `src/README.md`
+and `test/README.md`.

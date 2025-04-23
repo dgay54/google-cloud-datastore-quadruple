@@ -12,12 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-LICENSE=../third_party/Quadruple/license.m4
-QUADRUPLE_BUILDER=../third_party/Quadruple/QuadrupleBuilder.m4
+QUADRUPLE=../third_party/Quadruple
+LICENSE=$(QUADRUPLE)/license.m4
+QUADRUPLE_BUILDER=$(QUADRUPLE)/QuadrupleBuilder.m4
 
-JAVA_TARGET=../java/quadruple-converter/src/main/java/com/google/cloud/datastore/core/quadruple/QuadrupleBuilder.java
+JAVA_TARGET=$(QUADRUPLE)/java/quadruple-converter/src/main/java/com/google/cloud/datastore/core/quadruple/QuadrupleBuilder.java
 
-PYTHON_TARGET=../python/quadruple_builder.py
+PYTHON_TARGET=$(QUADRUPLE)/python/quadruple_builder.py
 
 all: $(JAVA_TARGET) $(PYTHON_TARGET)
 

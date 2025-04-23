@@ -309,9 +309,8 @@ dnl  limitations under the License.
     uint64_array(buffer12x32, 12)
     digit_array(truncatedMantissa, cst(MAX_MANTISSA_LENGTH))
 
-  def_fn(ret_void, parse, bool_decl(negative), digits_decl(digits), int64_decl(exp10))
+  def_fn(ret_void, parse, digits_decl(digits), int64_decl(exp10))
     exp10 += array_len(digits) - 1; # digits is viewed as x.yyy below.
-    field(negative) = negative;
     field(exponent) = 0;
     field(mantHi) = 0;
     field(mantLo) = 0;

@@ -1,7 +1,7 @@
 define(cst, `$1')dnl
-define(int32_constant, `private static final int $1 = $2;')dnl
-define(uint64_constant, `private static final long $1 = translit($2, _)L;')dnl
-define(double_constant, `private static final double $1 = $2;')dnl
+define(int32_constant, `static final int $1 = $2;')dnl
+define(uint64_constant, `static final long $1 = translit($2, _)L;')dnl
+define(double_constant, `static final double $1 = $2;')dnl
 define(uint64_array_array_constant, `private static final long[][] $1 = { shift($@) };')dnl
 define(cst_uint64, translit($1, _)L)dnl
 define(cst_array, { $@ })dnl
@@ -55,14 +55,13 @@ package com.google.cloud.datastore.core.quadruple;
 
 public class QuadrupleBuilder {
 
-  public static QuadrupleBuilder parseDecimal(boolean negative, byte[] digits, long exp10) {
+  public static QuadrupleBuilder parseDecimal(byte[] digits, long exp10) {
     QuadrupleBuilder q = new QuadrupleBuilder();
-    q.parse(negative, digits, exp10);
+    q.parse(digits, exp10);
     return q;
   }
 
   # The fields containing the value of the instance
-  public boolean negative;
   public int exponent;
   public long mantHi;
   public long mantLo;

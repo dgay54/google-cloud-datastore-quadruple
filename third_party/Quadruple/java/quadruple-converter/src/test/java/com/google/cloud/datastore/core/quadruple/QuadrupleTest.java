@@ -16,6 +16,7 @@ package com.google.cloud.datastore.core.quadruple;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Random;
@@ -23,37 +24,6 @@ import org.junit.jupiter.api.Test;
 
 public class QuadrupleTest {
   private static final int QUADRUPLE_BIAS = 0x7fff_ffff;
-
-  private void assertLessThan(Quadruple q1, Quadruple q2) {
-    assertTrue(q1.compareTo(q2) < 0);
-  }
-
-  private double toDouble(Quadruple q) {
-    if (q.biasedExponent() == 0) {
-      return q.negative() ? -0.0 : 0.0;
-    }
-    if (q.biasedExponent() == (int) 0xffffffff) {
-      return (q.mantHi() | q.mantLo()) != 0
-          ? Double.NaN
-          : q.negative() ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
-    }
-    int doubleExponent = q.exponent();
-    long mantissa = q.mantHi() >>> 12; // Does not round.
-    if (doubleExponent > 1023) {
-      doubleExponent = 1024;
-      mantissa = 0;
-    } else if (doubleExponent < -1022) {
-      // subnormal
-      if (doubleExponent < -1074) {
-        mantissa = 0;
-      } else {
-        mantissa = (mantissa | 1L << 52) >>> -doubleExponent - 1022;
-      }
-      doubleExponent = -1023;
-    }
-    return Double.longBitsToDouble(
-        (q.negative() ? 1L << 63 : 0) | ((doubleExponent + 1023L) << 52) | mantissa);
-  }
 
   @Test
   public void simple() {
@@ -95,7 +65,7 @@ public class QuadrupleTest {
     assertLessThan(Quadruple.POSITIVE_ZERO, Quadruple.POSITIVE_INFINITY);
   }
 
-  // @Test
+  @Test
   public void randomQuadruple() {
     Random random = new Random(4254);
 
@@ -212,6 +182,44 @@ public class QuadrupleTest {
     }
   }
 
+  @Test
+  public void fromString_special() {
+    assertEquals(Quadruple.NaN, Quadruple.fromString("NaN"));
+    assertEquals(Quadruple.POSITIVE_INFINITY, Quadruple.fromString("Infinity"));
+    assertEquals(Quadruple.NEGATIVE_INFINITY, Quadruple.fromString("-Infinity"));
+  }
+
+  @Test
+  public void fromString_invalid() {
+    invalidString("");
+    invalidString("-");
+    invalidString("blurb");
+    invalidString("1a");
+    invalidString("123.45a");
+    invalidString("123.45e");
+    invalidString("123.45ek");
+    invalidString("123.45e-k");
+    invalidString("123.45e-12z");
+    invalidString("123.45e1234567890");
+  }
+
+  private static void invalidString(String s) {
+    assertThrows(NumberFormatException.class, () -> Quadruple.fromString(s));
+  }
+
+  @Test
+  public void fromString() {
+    assertEquals(Quadruple.fromDouble(2), Quadruple.fromString("2"));
+    assertEquals(Quadruple.fromDouble(-25), Quadruple.fromString("-25"));
+    assertEquals(Quadruple.fromDouble(1.5), Quadruple.fromString("1.5"));
+    assertEquals(Quadruple.fromDouble(0.5), Quadruple.fromString(".5"));
+    assertEquals(Quadruple.fromDouble(12), Quadruple.fromString("12."));
+    assertEquals(Quadruple.fromDouble(420), Quadruple.fromString("42e1"));
+    assertEquals(Quadruple.fromDouble(4200), Quadruple.fromString("4.2e3"));
+    assertEquals(Quadruple.fromDouble(42), Quadruple.fromString("420e-1"));
+    assertEquals(Quadruple.fromDouble(100), Quadruple.fromString("1000000000000e-10"));
+  }
+
   private static long nextRandomLong(Random random) {
     int bits = random.nextInt(64) + 1;
     long i64 = random.nextLong();
@@ -220,5 +228,36 @@ public class QuadrupleTest {
     }
     i64 &= (1L << bits) - 1;
     return i64 - (1L << (bits - 1));
+  }
+
+  private void assertLessThan(Quadruple q1, Quadruple q2) {
+    assertTrue(q1.compareTo(q2) < 0);
+  }
+
+  private double toDouble(Quadruple q) {
+    if (q.biasedExponent() == 0) {
+      return q.negative() ? -0.0 : 0.0;
+    }
+    if (q.biasedExponent() == (int) 0xffffffff) {
+      return (q.mantHi() | q.mantLo()) != 0
+          ? Double.NaN
+          : q.negative() ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
+    }
+    int doubleExponent = q.exponent();
+    long mantissa = q.mantHi() >>> 12; // Does not round.
+    if (doubleExponent > 1023) {
+      doubleExponent = 1024;
+      mantissa = 0;
+    } else if (doubleExponent < -1022) {
+      // subnormal
+      if (doubleExponent < -1074) {
+        mantissa = 0;
+      } else {
+        mantissa = (mantissa | 1L << 52) >>> -doubleExponent - 1022;
+      }
+      doubleExponent = -1023;
+    }
+    return Double.longBitsToDouble(
+        (q.negative() ? 1L << 63 : 0) | ((doubleExponent + 1023L) << 52) | mantissa);
   }
 }

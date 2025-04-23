@@ -12,13 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-JAVA_TEST=../java/quadruple-converter/src/test/java/com/google/cloud/datastore/core/quadruple/QuadrupleBuilderTest.java
-PYTHON_TEST=../python/quadruple_builder_test.py
+QUADRUPLE=../third_party/Quadruple
+JAVA_TEST=$(QUADRUPLE)/java/quadruple-converter/src/test/java/com/google/cloud/datastore/core/quadruple/QuadrupleBuilderTest.java
+PYTHON_TEST=$(QUADRUPLE)/python/quadruple_builder_test.py
 
 all: $(JAVA_TEST) $(PYTHON_TEST)
 
-$(JAVA_TEST): java/start.m4 edgecases.m4 testcases.m4 java/end.m4 Makefile
-	m4 java/start.m4 edgecases.m4 testcases.m4 java/end.m4 | sed -e 's/#/\/\//' > "$@"
+$(JAVA_TEST): java/start.m4 edgecases.m4 testcases.m4 java/end.m4
+	m4 $^ | sed -e 's/#/\/\//' > "$@"
 
-$(PYTHON_TEST): python/start.m4 edgecases.m4 testcases.m4 python/end.m4 Makefile
-	m4 python/start.m4 edgecases.m4 testcases.m4 python/end.m4 > "$@"
+$(PYTHON_TEST): python/start.m4 edgecases.m4 testcases.m4 python/end.m4
+	m4 $^ > "$@"

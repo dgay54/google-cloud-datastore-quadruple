@@ -23,56 +23,55 @@ package com.google.cloud.datastore.core.quadruple;
 
 public class QuadrupleBuilder {
 
-  public static QuadrupleBuilder parseDecimal(boolean negative, byte[] digits, long exp10) {
+  public static QuadrupleBuilder parseDecimal(byte[] digits, long exp10) {
     QuadrupleBuilder q = new QuadrupleBuilder();
-    q.parse(negative, digits, exp10);
+    q.parse(digits, exp10);
     return q;
   }
 
   // The fields containing the value of the instance
-  public boolean negative;
   public int exponent;
   public long mantHi;
   public long mantLo;
 
 
   // 2^192 = 6.277e57, so the 58-th digit after point may affect the result
-  private static final int MAX_MANTISSA_LENGTH = 59;
+  static final int MAX_MANTISSA_LENGTH = 59;
 
   // Max value of the decimal exponent, corresponds to EXPONENT_OF_MAX_VALUE
-  private static final int MAX_EXP10 = 646456993;
+  static final int MAX_EXP10 = 646456993;
 
   // Min value of the decimal exponent, corresponds to EXPONENT_OF_MIN_NORMAL
-  private static final int MIN_EXP10 = -646457032;
+  static final int MIN_EXP10 = -646457032;
 
   // (2^63) / 10 =~ 9.223372e17
-  private static final double TWO_POW_63_DIV_10 = 922337203685477580.0;
+  static final double TWO_POW_63_DIV_10 = 922337203685477580.0;
 
   // Just for convenience: 0x8000_0000_0000_0000L
-  private static final long HIGH_BIT = 0x8000000000000000L;
+  static final long HIGH_BIT = 0x8000000000000000L;
 
   // Just for convenience: 0x8000_0000L, 2^31
-  private static final long POW_2_31_L = 0x80000000L;
+  static final long POW_2_31_L = 0x80000000L;
 
   // Just for convenience: 0x0000_0000_FFFF_FFFFL
-  private static final long LOWER_32_BITS = 0x00000000FFFFFFFFL;
+  static final long LOWER_32_BITS = 0x00000000FFFFFFFFL;
 
   // Just for convenience: 0xFFFF_FFFF_0000_0000L;
-  private static final long HIGHER_32_BITS = 0xFFFFFFFF00000000L;
+  static final long HIGHER_32_BITS = 0xFFFFFFFF00000000L;
 
   // Approximate value of log<sub>2</sub>(10)
-  private static final double LOG2_10 = Math.log(10) / Math.log(2);
+  static final double LOG2_10 = Math.log(10) / Math.log(2);
 
   // Approximate value of log<sub>2</sub>(e)
-  private static final double LOG2_E = 1 / Math.log(2.0);
+  static final double LOG2_E = 1 / Math.log(2.0);
 
   // The value of the exponent (biased) corresponding to {@code 1.0 == 2^0}; equals to 2_147_483_647
   // ({@code 0x7FFF_FFFF}).
-  private static final int EXPONENT_BIAS = 0x7FFF_FFFF;
+  static final int EXPONENT_BIAS = 0x7FFF_FFFF;
 
   // The value of the exponent (biased), corresponding to {@code Infinity}, {@code _Infinty}, and
   // {@code NaN}
-  private static final long EXPONENT_OF_INFINITY = 0xFFFFFFFFL;
+  static final long EXPONENT_OF_INFINITY = 0xFFFFFFFFL;
 
   // An array of positive powers of two, each value consists of 4 longs: decimal exponent and 3 x 64
   // bits of mantissa, divided by ten Used to find an arbitrary power of 2 (by powerOfTwo(long exp)
@@ -284,9 +283,8 @@ public class QuadrupleBuilder {
     private final long[] buffer12x32 = new long[12];
     private final byte[] truncatedMantissa = new byte[MAX_MANTISSA_LENGTH];
 
-  private void parse(boolean negative,byte[] digits,long exp10) {
+  private void parse(byte[] digits,long exp10) {
     exp10 += (digits).length - 1; // digits is viewed as x.yyy below.
-    this.negative = negative;
     this.exponent = 0;
     this.mantHi = 0;
     this.mantLo = 0;

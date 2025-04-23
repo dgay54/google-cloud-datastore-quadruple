@@ -23,12 +23,7 @@ from quadruple_builder import QuadrupleBuilder
 class TestQuadupleBuilder(unittest.TestCase):
 
   def check(self, mantissa, exp10, mant_hi, mant_lo, exponent):
-    self.signedCheck(False, mantissa, exp10, mant_hi, mant_lo, exponent)
-    self.signedCheck(True, mantissa, exp10, mant_hi, mant_lo, exponent)
-
-  def signedCheck(self, negative, mantissa, exp10, mant_hi, mant_lo, exponent):
-    q = QuadrupleBuilder.parseDecimal(negative, mantissa, exp10)
-    self.assertEqual(q.negative, negative)
+    q = QuadrupleBuilder.parseDecimal(mantissa, exp10)
     self.assertEqual(q.mantHi, mant_hi)
     self.assertEqual(q.mantLo, mant_lo)
     self.assertEqual(q.exponent, exponent)

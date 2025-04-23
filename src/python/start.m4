@@ -15,7 +15,6 @@ define(true, True)dnl
 define(null, None)dnl
 
 define(def_init, {def __init__(self):
-    self.negative = False
     self.exponent = 0
     self.mantHi = 0
     self.mantLo = 0})dnl
@@ -66,8 +65,8 @@ import math
 class QuadrupleBuilder(object):
 
   @staticmethod
-  def parseDecimal(negative, digits, exp10):
+  def parseDecimal(digits, exp10):
     q = QuadrupleBuilder()
-    q.parse(negative, [ord(c) - 48 for c in digits], exp10)
+    q.parse([ord(c) - 48 for c in digits], exp10)
     return q
 

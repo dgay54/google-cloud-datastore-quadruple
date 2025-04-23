@@ -25,9 +25,9 @@ import math
 class QuadrupleBuilder(object):
 
   @staticmethod
-  def parseDecimal(negative, digits, exp10):
+  def parseDecimal(digits, exp10):
     q = QuadrupleBuilder()
-    q.parse(negative, [ord(c) - 48 for c in digits], exp10)
+    q.parse([ord(c) - 48 for c in digits], exp10)
     return q
 
 
@@ -273,7 +273,6 @@ class QuadrupleBuilder(object):
   # The order of words in the arrays is big-endian: the highest part is in buff[0] (in buff[1] for
   # buffers of 10 words)
   def __init__(self):
-    self.negative = False
     self.exponent = 0
     self.mantHi = 0
     self.mantLo = 0
@@ -284,9 +283,8 @@ class QuadrupleBuilder(object):
     self.buffer12x32 = [0] * 12
     self.truncatedMantissa = [0] * self.MAX_MANTISSA_LENGTH
 
-  def parse(self, negative,digits,exp10):
+  def parse(self, digits,exp10):
     exp10 += len((digits)) - 1; # digits is viewed as x.yyy below.
-    self.negative = negative;
     self.exponent = 0;
     self.mantHi = 0;
     self.mantLo = 0;

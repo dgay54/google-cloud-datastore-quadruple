@@ -12,41 +12,28 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-define(quadruple_test, `check(test_name, $1, translit($2, _), translit($3, _)LL, translit($4, _)LL, translit($5, _)LL);')
-define(test_case, `  test_name = "$1";')
-define(test_case_end, `
-')
+define(quadruple_test, `check($1, translit($2, _), translit($3, _)LL, translit($4, _)LL, translit($5, _)LL);')dnl
+define(test_case, `TEST(QuadrupleBuilderTest, $1) {')dnl
+define(test_case_end, `}
+')dnl
 
 $include "quadruple_builder.h"
-$include <iostream>
 $include <string>
+$include <gtest/gtest.h>
 
-int exit_code = 0;
-
-void expect_equals(const std::string& test_name,
-                  uint64_t actual, uint64_t expected) {
-  if (actual != expected) {
-    std::cout << test_name << actual << " != (expected) " << expected << "\n";
-    exit_code = 2;
-  }
-}
-
-void check(const std::string& test_name, const std::string& digits,
+void check(const std::string& digits,
            int64_t exp10, uint64_t mant_hi, uint64_t mant_lo, uint64_t exponent) {
   std::vector<uint8_t> vdigits(digits.size());
   for (int i = 0; i < digits.size(); i++) {
     vdigits[i] = digits[i] - '0';
   }
 
-  cloud_datastore::util::QuadrupleBuilder parser;
+  cloud_datastore::QuadrupleBuilder parser;
   parser.parseDecimal(vdigits, exp10);
 
-  std::string name = test_name + ":" + digits + "e" + std::to_string(exp10);
-  expect_equals(name + " (hi)", parser.mantHi, mant_hi);
-  expect_equals(name + " (lo)", parser.mantLo, mant_lo);
-  expect_equals(name + " (exp)", parser.exponent, exponent);
+  std::string name = digits + "e" + std::to_string(exp10);
+  EXPECT_EQ(parser.mantHi, mant_hi) << name + " (hi)";
+  EXPECT_EQ(parser.mantLo, mant_lo) << name + " (lo)";
+  EXPECT_EQ(parser.exponent, exponent) << name + " (exp)";
 }
-
-int main(int argc, char **argv) {
-  std::string test_name;
 

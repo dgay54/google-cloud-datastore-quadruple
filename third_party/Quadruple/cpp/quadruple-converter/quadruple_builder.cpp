@@ -23,8 +23,6 @@
 #include "quadruple_builder.h"
 
 namespace cloud_datastore {
-namespace util {
-
 
 
   // 2^192 = 6.277e57, so the 58-th digit after point may affect the result
@@ -629,7 +627,7 @@ namespace util {
   // @param mantissa a buffer containing unpacked mantissa
   // @return if the mantissa was not normal initially, a correction that should be added to the result's exponent, or 0 otherwise
   template<std::size_t N> int32_t QuadrupleBuilder::normalizeMant(std::array<uint64_t,N>& mantissa) {
-    int32_t expCorr = 31 - std::countl_zero(mantissa[0]);
+    int32_t expCorr = 31 - __builtin_clzll(mantissa[0]);
     if (expCorr != 0) {
       divBuffByPower2(mantissa, expCorr);
     }
@@ -738,5 +736,4 @@ namespace util {
     }
   }
 
-}  // namespace util
 }  // namespace cloud_datastore

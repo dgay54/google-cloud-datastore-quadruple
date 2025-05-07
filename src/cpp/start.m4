@@ -50,7 +50,7 @@ define(wrap_uint64, `($1)')dnl
 define(lsr, `(($1) >> ($2))')dnl
 define(int_divide, `(($1) / ($2))')dnl
 
-define(f_number_of_leading_zeros, `std::countl_zero($1)')dnl
+define(f_number_of_leading_zeros, `__builtin_clzll($1)')dnl
 define(f_log, `log($1)')dnl
 define(f_floor, `((uint64_t) floor($1))')dnl
 define(f_iabs, `static_cast<int32_t>(labs($1))')dnl
@@ -58,5 +58,3 @@ define(f_iabs, `static_cast<int32_t>(labs($1))')dnl
 $include "quadruple_builder.h"
 
 namespace cloud_datastore {
-namespace util {
-

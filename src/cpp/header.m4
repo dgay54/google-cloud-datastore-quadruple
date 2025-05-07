@@ -30,7 +30,6 @@ $include <vector>
 $include <math.h>
 
 namespace cloud_datastore {
-namespace util {
 
 class QuadrupleBuilder {
 public:

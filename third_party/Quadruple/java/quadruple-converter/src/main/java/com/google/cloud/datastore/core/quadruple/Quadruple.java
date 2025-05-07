@@ -141,9 +141,9 @@ public record Quadruple(boolean negative, int biasedExponent, long mantHi, long 
    *
    * <ul>
    *   <li>NaN for Quadruple.NaN
-   *   <li>Infinity for Quadruple.POSITIVE_INFINITY
+   *   <li>Infinity or +Infinity for Quadruple.POSITIVE_INFINITY
    *   <li>-Infinity for Quadruple.NEGATIVE_INFINITY
-   *   <li>regular expression: -?[0-9]*(.[0-9]*)?(e-?[0-9]+)? - the exponent cannot be more than 9
+   *   <li>regular expression: [+-]?[0-9]*(.[0-9]*)?([eE][+-]?[0-9]+)? - the exponent cannot be more than 9
    *       digits, and the whole string cannot be empty
    * </ul>
    */
@@ -154,7 +154,7 @@ public record Quadruple(boolean negative, int biasedExponent, long mantHi, long 
     if (s.equals("-Infinity")) {
       return NEGATIVE_INFINITY;
     }
-    if (s.equals("Infinity")) {
+    if (s.equals("Infinity") || s.equals("+Infinity")) {
       return POSITIVE_INFINITY;
     }
     char[] chars = s.toCharArray();
@@ -164,9 +164,13 @@ public record Quadruple(boolean negative, int biasedExponent, long mantHi, long 
     int j = 0;
     int exponent = 0;
     boolean negative = false;
-    if (i < len && chars[i] == '-') {
-      negative = true;
-      i++;
+    if (i < len) {
+      if (chars[i] == '-') {
+        negative = true;
+        i++;
+      } else if (chars[i] == '+') {
+        i++;
+      }
     }
     int firstDigit = i;
     while (i < len && Character.isDigit(chars[i])) {
@@ -179,13 +183,17 @@ public record Quadruple(boolean negative, int biasedExponent, long mantHi, long 
       }
       exponent = decimal - i;
     }
-    if (i < len && chars[i] == 'e') {
+    if (i < len && (chars[i] == 'e' || chars[i] == 'E')) {
       int exponentValue = 0;
       i++;
       int exponentSign = 1;
-      if (i < len && chars[i] == '-') {
-        exponentSign = -1;
-        i++;
+      if (i < len) {
+        if (chars[i] == '-') {
+          exponentSign = -1;
+          i++;
+        } else if (chars[i] == '+') {
+          i++;
+        }
       }
       int firstExponent = i;
       while (i < len && Character.isDigit(chars[i])) {

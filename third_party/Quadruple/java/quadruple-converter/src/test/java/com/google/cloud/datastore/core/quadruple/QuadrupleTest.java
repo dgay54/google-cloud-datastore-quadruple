@@ -186,20 +186,26 @@ public class QuadrupleTest {
   public void fromString_special() {
     assertEquals(Quadruple.NaN, Quadruple.fromString("NaN"));
     assertEquals(Quadruple.POSITIVE_INFINITY, Quadruple.fromString("Infinity"));
+    assertEquals(Quadruple.POSITIVE_INFINITY, Quadruple.fromString("+Infinity"));
     assertEquals(Quadruple.NEGATIVE_INFINITY, Quadruple.fromString("-Infinity"));
   }
 
   @Test
   public void fromString_invalid() {
     invalidString("");
+    invalidString("-NaN");
+    invalidString("+NaN");
     invalidString("-");
+    invalidString("+");
     invalidString("blurb");
     invalidString("1a");
     invalidString("123.45a");
     invalidString("123.45e");
     invalidString("123.45ek");
     invalidString("123.45e-k");
+    invalidString("123.45e+k");
     invalidString("123.45e-12z");
+    invalidString("123.45e+12z");
     invalidString("123.45e1234567890");
   }
 
@@ -210,12 +216,14 @@ public class QuadrupleTest {
   @Test
   public void fromString() {
     assertEquals(Quadruple.fromDouble(2), Quadruple.fromString("2"));
+    assertEquals(Quadruple.fromDouble(22), Quadruple.fromString("+22"));
     assertEquals(Quadruple.fromDouble(-25), Quadruple.fromString("-25"));
     assertEquals(Quadruple.fromDouble(1.5), Quadruple.fromString("1.5"));
     assertEquals(Quadruple.fromDouble(0.5), Quadruple.fromString(".5"));
     assertEquals(Quadruple.fromDouble(12), Quadruple.fromString("12."));
     assertEquals(Quadruple.fromDouble(420), Quadruple.fromString("42e1"));
     assertEquals(Quadruple.fromDouble(4200), Quadruple.fromString("4.2e3"));
+    assertEquals(Quadruple.fromDouble(4100), Quadruple.fromString("4.1e+3"));
     assertEquals(Quadruple.fromDouble(42), Quadruple.fromString("420e-1"));
     assertEquals(Quadruple.fromDouble(100), Quadruple.fromString("1000000000000e-10"));
   }

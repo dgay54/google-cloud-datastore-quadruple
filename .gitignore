@@ -2,3 +2,6 @@
 __pycache__
 .mvn
 target
+*.o
+third_party/Quadruple/cpp/quadruple-converter/quadruple_builder_test
+third_party/Quadruple/cpp/quadruple-converter/quadruple_test

@@ -28,7 +28,6 @@
 #include <math.h>
 
 namespace cloud_datastore {
-namespace util {
 
 class QuadrupleBuilder {
 public:
@@ -71,7 +70,6 @@ private:
   template<std::size_t N> void addToBuff(std::array<uint64_t,N>& buff,int32_t idx,uint64_t summand);
 };
 
-}  // namespace util
 }  // namespace cloud_datastore
 
 #endif

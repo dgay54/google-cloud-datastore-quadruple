@@ -16,6 +16,6 @@ how the source code for each language is generated.
 
 `third_party/Quadruple/QuadrupleBuilder.m4` is the actual multi-language source
 code, and the per-language libraries are in per-language sub-directories of
-`third_party/Quadruple` (currently, `java` and `python`). The code in these
+`third_party/Quadruple` (currently, `java`, `python` and `cpp`). The code in these
 directories can be re-generated following the instructions in `src/README.md`
 and `test/README.md`.

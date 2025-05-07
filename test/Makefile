@@ -16,7 +16,7 @@ QUADRUPLE=../third_party/Quadruple
 JAVA_TEST=$(QUADRUPLE)/java/quadruple-converter/src/test/java/com/google/cloud/datastore/core/quadruple/QuadrupleBuilderTest.java
 PYTHON_TEST=$(QUADRUPLE)/python/quadruple_builder_test.py
 
-CPP_TEST=$(QUADRUPLE)/cpp/quadruple-converter/quadruple_builder_test.cpp
+CPP_TEST=$(QUADRUPLE)/cpp/quadruple-converter/quadruple_builder_test.cc
 
 all: $(JAVA_TEST) $(PYTHON_TEST) $(CPP_TEST)
 

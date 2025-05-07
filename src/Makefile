@@ -18,7 +18,7 @@ QUADRUPLE_BUILDER=$(QUADRUPLE)/QuadrupleBuilder.m4
 
 JAVA_TARGET=$(QUADRUPLE)/java/quadruple-converter/src/main/java/com/google/cloud/datastore/core/quadruple/QuadrupleBuilder.java
 
-CPP_TARGET=$(QUADRUPLE)/cpp/quadruple-converter/quadruple_builder.cpp
+CPP_TARGET=$(QUADRUPLE)/cpp/quadruple-converter/quadruple_builder.cc
 
 CPP_HEADER=$(QUADRUPLE)/cpp/quadruple-converter/quadruple_builder.h
 

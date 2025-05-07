@@ -16,10 +16,15 @@ QUADRUPLE=../third_party/Quadruple
 JAVA_TEST=$(QUADRUPLE)/java/quadruple-converter/src/test/java/com/google/cloud/datastore/core/quadruple/QuadrupleBuilderTest.java
 PYTHON_TEST=$(QUADRUPLE)/python/quadruple_builder_test.py
 
-all: $(JAVA_TEST) $(PYTHON_TEST)
+CPP_TEST=$(QUADRUPLE)/cpp/quadruple-converter/quadruple_builder_test.cpp
+
+all: $(JAVA_TEST) $(PYTHON_TEST) $(CPP_TEST)
 
 $(JAVA_TEST): java/start.m4 edgecases.m4 testcases.m4 java/end.m4
 	m4 $^ | sed -e 's/#/\/\//' > "$@"
 
 $(PYTHON_TEST): python/start.m4 edgecases.m4 testcases.m4 python/end.m4
 	m4 $^ > "$@"
+
+$(CPP_TEST): cpp/start.m4 edgecases.m4 testcases.m4 cpp/end.m4
+	m4 $^ | sed -e 's/#/\/\//' -e 's/\$$/#/' > "$@"

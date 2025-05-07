@@ -3,13 +3,13 @@ changequote(`{', `}')dnl
 
 define(cst, {self.$1})dnl
 define(int32_constant, {$1 = $2})dnl
-define(uint64_constant, {$1 = translit($2, _)})dnl
+define(uint64_constant, {$1 = $2})dnl
 define(double_constant, {$1 = $2})dnl
 define(uint64_array_array_constant, {$1 = ( shift($@) )})dnl
-define(cst_uint64, translit($1, _))dnl
+define(cst_uint64, $1)dnl
 define(cst_array, ( $@ ))dnl
 define(uint64_array, {self.$1 = [0] * $2})dnl
-define(digit_array, {self.$1 = [0] * $2})dnl
+define(new_digit_array, {$1 = [0] * $2})dnl
 define(false, False)dnl
 define(true, True)dnl
 define(null, None)dnl
@@ -19,6 +19,8 @@ define(def_init, {def __init__(self):
     self.mantHi = 0
     self.mantLo = 0})dnl
 define(def_fn, {def $2(self, shift(shift($@))):})dnl
+define(def_array_fn, {def $3(self, shift(shift(shift($@)))):})dnl
+define(array_size, {})dnl
 define(fn, {self.$1})dnl
 define(ret_void, {})dnl
 define(ret_bool, {})dnl
@@ -33,10 +35,13 @@ define(int32_decl, $1)dnl
 define(int64_decl, $1)dnl
 define(uint64_decl, $1)dnl
 define(uint64_array_decl, $1)dnl
+define(uint64_array_ldecl, $1)dnl
 define(uint64_array_array_decl, $1)dnl
 define(double_decl, $1)dnl
 
 define(field, {self.$1})dnl
+define(ref, {(self.$1)})dnl
+define(deref, {($1)})dnl
 define(array_len, {len(($1))})dnl
 
 define(c_if, {if $1:})dnl

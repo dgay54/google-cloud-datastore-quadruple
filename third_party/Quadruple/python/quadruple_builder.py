@@ -45,16 +45,16 @@ class QuadrupleBuilder(object):
   TWO_POW_63_DIV_10 = 922337203685477580.0
 
   # Just for convenience: 0x8000_0000_0000_0000L
-  HIGH_BIT = 0x8000000000000000
+  HIGH_BIT = 0x8000_0000_0000_0000
 
   # Just for convenience: 0x8000_0000L, 2^31
-  POW_2_31_L = 0x80000000
+  POW_2_31_L = 0x8000_0000
 
   # Just for convenience: 0x0000_0000_FFFF_FFFFL
-  LOWER_32_BITS = 0x00000000FFFFFFFF
+  LOWER_32_BITS = 0x0000_0000_FFFF_FFFF
 
   # Just for convenience: 0xFFFF_FFFF_0000_0000L;
-  HIGHER_32_BITS = 0xFFFFFFFF00000000
+  HIGHER_32_BITS = 0xFFFF_FFFF_0000_0000
 
   # Approximate value of log<sub>2</sub>(10)
   LOG2_10 = math.log((10)) / math.log((2))
@@ -68,11 +68,10 @@ class QuadrupleBuilder(object):
 
   # The value of the exponent (biased), corresponding to {@code Infinity}, {@code _Infinty}, and
   # {@code NaN}
-  EXPONENT_OF_INFINITY = 0xFFFFFFFF
+  EXPONENT_OF_INFINITY = 0xFFFF_FFFF
 
   # An array of positive powers of two, each value consists of 4 longs: decimal exponent and 3 x 64
-  # bits of mantissa, divided by ten Used to find an arbitrary power of 2 (by powerOfTwo(long exp)
-  # )
+  # bits of mantissa, divided by ten Used to find an arbitrary power of 2 (by powerOfTwo(long exp))
   POS_POWERS_OF_2 = ( # 0: 2^0 =   1 = 0.1e1
     ( 1,0x1999_9999_9999_9999,0x9999_9999_9999_9999,0x9999_9999_9999_999a ),# 1: 2^(2^0) =   2^1 =   2 = 0.2e1
     ( 1,0x3333_3333_3333_3333,0x3333_3333_3333_3333,0x3333_3333_3333_3334 ),# ***
@@ -163,8 +162,7 @@ class QuadrupleBuilder(object):
     ( 646456994,0x2d18_e844_84d9_1f78,0x4079_bfe7_829d_ec6f,0x2155_1643_e365_abc6 ) )
 
   # An array of negative powers of two, each value consists of 4 longs: decimal exponent and 3 x 64
-  # bits of mantissa, divided by ten. Used to find an arbitrary power of 2 (by powerOfTwo(long exp)
-  # )
+  # bits of mantissa, divided by ten. Used to find an arbitrary power of 2 (by powerOfTwo(long exp))
   NEG_POWERS_OF_2 = ( # v18
     # 0: 2^0 =   1 = 0.1e1
     ( 1,0x1999_9999_9999_9999,0x9999_9999_9999_9999,0x9999_9999_9999_999a ),# 1: 2^-(2^0) =   2^-1 =   0.5 = 0.5e0
@@ -281,7 +279,6 @@ class QuadrupleBuilder(object):
     self.buffer6x32B = [0] * 6
     self.buffer6x32C = [0] * 6
     self.buffer12x32 = [0] * 12
-    self.truncatedMantissa = [0] * self.MAX_MANTISSA_LENGTH
 
   def parse(self, digits,exp10):
     exp10 += len((digits)) - 1; # digits is viewed as x.yyy below.
@@ -332,7 +329,8 @@ class QuadrupleBuilder(object):
     # Limit the string length to avoid unnecessary fuss
     if len((digits)) - firstDigit > self.MAX_MANTISSA_LENGTH:
       carry = digits[self.MAX_MANTISSA_LENGTH] >= 5; # The highest digit to be truncated
-      truncated = self.truncatedMantissa;
+
+      truncated = [0] * self.MAX_MANTISSA_LENGTH;
       for i in range(0, self.MAX_MANTISSA_LENGTH):
         truncated[i] = digits[i + firstDigit];
       
@@ -461,29 +459,29 @@ class QuadrupleBuilder(object):
     
 
     # positive powers of 2 (2^0, 2^1, 2^2, 2^4, 2^8 ... 2^(2^31) )
-    powers = self.POS_POWERS_OF_2;
+    powers = (self.POS_POWERS_OF_2);
     if exp < 0:
       exp = -exp;
-      powers = self.NEG_POWERS_OF_2; # positive powers of 2 (2^0, 2^-1, 2^-2, 2^-4, 2^-8 ... 2^30)
+      powers = (self.NEG_POWERS_OF_2); # positive powers of 2 (2^0, 2^-1, 2^-2, 2^-4, 2^-8 ... 2^30)
     
-    # say("powerOfTwo: exp = %s (%s)", exp, hexStr((int)exp));
 
-    # 2^31 = 0x8000_0000L; a single bit that will be shifted right at every
-    # iteration
+    # 2^31 = 0x8000_0000L; a single bit that will be shifted right at every iteration
     currPowOf2 = self.POW_2_31_L;
-    idx = len((powers)) - 1; # Index in the table of powers
-    power = None;
+    idx = 32; # Index in the table of powers
+    power = (powers)[idx]; # Placeholder value, will be overwritten.
+    first_power = True;
 
     # if exp = b31 * 2^31 + b30 * 2^30 + .. + b0 * 2^0, where b0..b31 are the values of the bits in
     # exp, then 2^exp = 2^b31 * 2^b30 ... * 2^b0. Find the product, using a table of powers of 2.
     while exp > 0:
       if exp >= currPowOf2: # the current bit in the exponent is 1
-        if power == None:
+        if first_power:
            # 4 longs, power[0] -- decimal (?) exponent, power[1..3] -- 192 bits of mantissa
-          power = powers[idx];
+          power = (powers)[idx];
+          first_power = False;
         else:
           # Multiply by the corresponding power of 2
-          power = self.multPacked3x64_AndAdjustExponent(power, powers[idx]);
+          power = self.multPacked3x64_AndAdjustExponent(power, (powers)[idx]);
         
         exp -= currPowOf2;
       
@@ -504,7 +502,7 @@ class QuadrupleBuilder(object):
     self.multPacked3x64_simply(factor1, factor2);
     expCorr = self.correctPossibleUnderflow(self.buffer12x32);
     result = self.buffer4x64B;
-    result = self.pack_6x32_to_3x64(self.buffer12x32, result);
+    self.pack_6x32_to_3x64(self.buffer12x32, result);
 
     # result[0] is a signed int64 value stored in an uint64
     result[0] = factor1[0] + factor2[0] + (expCorr); # product.exp = f1.exp + f2.exp
@@ -513,7 +511,7 @@ class QuadrupleBuilder(object):
 
   # Multiplies mantissas of two packed quasidecimal values (each is an array of 4 longs, exponent +
   # 3 x 64 bits of mantissa) Returns the product as unpacked buffer of 12 x 32 (12 x 32 bits of
-  # product)<br>
+  # product)
   # uses arrays <b><i>buffer6x32A, buffer6x32B, buffer12x32</b></i>
   # @param factor1 an array of longs containing factor 1 as packed quasidecimal
   # @param factor2 an array of longs containing factor 2 as packed quasidecimal
@@ -597,14 +595,14 @@ class QuadrupleBuilder(object):
     for i in range(0, len((product))):
       product[i] = 0;
     
-    self.unpack_3x64_to_6x32(factor2, self.buffer6x32B); # It's the powerOf2, with exponent in 0'th word
-    factor2 = self.buffer6x32B;
+    unpacked2 = self.buffer6x32B;
+    self.unpack_3x64_to_6x32(factor2, unpacked2); # It's the powerOf2, with exponent in 0'th word
 
     maxFactIdx = len((factor1));
 
     for i in range((maxFactIdx) - 1, (0) - 1, -1): # compute partial 32-bit products
       for j in range((maxFactIdx) - 1, (0) - 1, -1):
-        part = factor1[i] * factor2[j];
+        part = factor1[i] * unpacked2[j];
         product[j + i + 1] = ((product[j + i + 1] + (part & self.LOWER_32_BITS)) & 0xffffffffffffffff);
         product[j + i] = ((product[j + i] + ((part) >> (32))) & 0xffffffffffffffff);
       
@@ -689,7 +687,6 @@ class QuadrupleBuilder(object):
     result[1] = (unpackedMant[0] << 32) + unpackedMant[1];
     result[2] = (unpackedMant[2] << 32) + unpackedMant[3];
     result[3] = (unpackedMant[4] << 32) + unpackedMant[5];
-    return result;
   
 
   # Unpacks the mantissa of a 192-bit quasidecimal (4 longs: exp10, mantHi, mantMid, mantLo) to a

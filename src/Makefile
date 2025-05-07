@@ -18,12 +18,22 @@ QUADRUPLE_BUILDER=$(QUADRUPLE)/QuadrupleBuilder.m4
 
 JAVA_TARGET=$(QUADRUPLE)/java/quadruple-converter/src/main/java/com/google/cloud/datastore/core/quadruple/QuadrupleBuilder.java
 
+CPP_TARGET=$(QUADRUPLE)/cpp/quadruple-converter/quadruple_builder.cpp
+
+CPP_HEADER=$(QUADRUPLE)/cpp/quadruple-converter/quadruple_builder.h
+
 PYTHON_TARGET=$(QUADRUPLE)/python/quadruple_builder.py
 
-all: $(JAVA_TARGET) $(PYTHON_TARGET)
+all: $(JAVA_TARGET) $(PYTHON_TARGET) $(CPP_TARGET) $(CPP_HEADER)
 
 $(JAVA_TARGET): $(LICENSE) java/start.m4 $(QUADRUPLE_BUILDER) java/end.m4
 	m4 $^ | sed -e 's/#/\/\//' > "$@"
 
 $(PYTHON_TARGET): $(LICENSE) python/start.m4 $(QUADRUPLE_BUILDER)
 	m4 $^ > "$@"
+
+$(CPP_TARGET):  $(LICENSE) cpp/start.m4 $(QUADRUPLE_BUILDER) cpp/end.m4
+	m4 $^ | sed -e 's/#/\/\//' -e 's/\$$/#/' > "$@"
+
+$(CPP_HEADER):  $(LICENSE) cpp/header.m4 $(QUADRUPLE_BUILDER) cpp/end.m4
+	(cat $(LICENSE); egrep 'def_fn\(|def_array_fn\(|uint64_array\(' $(QUADRUPLE_BUILDER) | m4 cpp/header.m4 - cpp/headerend.m4) | sed -e 's/#/\/\//' -e 's/\$$/#/' > "$@"

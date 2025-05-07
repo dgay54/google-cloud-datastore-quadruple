@@ -6,10 +6,12 @@ define(uint64_array_array_constant, `private static final long[][] $1 = { shift(
 define(cst_uint64, translit($1, _)L)dnl
 define(cst_array, { $@ })dnl
 define(uint64_array, `private final long[] $1 = new long[$2];')dnl
-define(digit_array, `private final byte[] $1 = new byte[$2];')dnl
+define(new_digit_array, `byte[] $1 = new byte[$2];')dnl
 
 define(def_init, `')dnl
 define(def_fn, `private $1 $2(shift(shift($@))) {')dnl
+define(def_array_fn, `private $2 $3(shift(shift(shift($@)))) {')dnl
+define(array_size, `')dnl
 define(fn, `$1')dnl
 define(ret_void, `void')dnl
 define(ret_bool, `boolean')dnl
@@ -24,10 +26,13 @@ define(int32_decl, `int $1')dnl
 define(int64_decl, `long $1')dnl
 define(uint64_decl, `long $1')dnl
 define(uint64_array_decl, `long[] $1')dnl
+define(uint64_array_ldecl, `long[] $1')dnl
 define(uint64_array_array_decl, `long[][] $1')dnl
 define(double_decl, `double $1')dnl
 
 define(field, `this.$1')dnl
+define(ref, `($1)')dnl
+define(deref, `($1)')dnl
 define(array_len, `($1).length')dnl
 
 define(c_if, `if ($1) {')dnl

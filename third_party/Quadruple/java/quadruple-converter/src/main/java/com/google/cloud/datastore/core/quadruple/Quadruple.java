@@ -14,6 +14,8 @@
 
 package com.google.cloud.datastore.core.quadruple;
 
+import static com.google.cloud.datastore.core.quadruple.QuadrupleBuilder.EXPONENT_OF_INFINITY;
+
 /**
  * A 128-bit binary floating point number which supports comparisons and creation from long, double
  * and string.
@@ -23,29 +25,115 @@ package com.google.cloud.datastore.core.quadruple;
  * @param mantHi the unsigned high 64 bits of the mantissa (leading 1 omitted).
  * @param mantLo the unsigned low 64 bits of the mantissa.
  */
-public record Quadruple(boolean negative, int biasedExponent, long mantHi, long mantLo)
-    implements Comparable<Quadruple> {
+public final class Quadruple implements Comparable<Quadruple> {
 
   public static final Quadruple POSITIVE_ZERO = new Quadruple(false, 0, 0, 0);
   public static final Quadruple NEGATIVE_ZERO = new Quadruple(true, 0, 0, 0);
-  public static final Quadruple NaN =
-      new Quadruple(false, (int) QuadrupleBuilder.EXPONENT_OF_INFINITY, 1L << 63, 0);
+  public static final Quadruple NaN = new Quadruple(false, (int) EXPONENT_OF_INFINITY, 1L << 63, 0);
   public static final Quadruple NEGATIVE_INFINITY =
-      new Quadruple(true, (int) QuadrupleBuilder.EXPONENT_OF_INFINITY, 0, 0);
+      new Quadruple(true, (int) EXPONENT_OF_INFINITY, 0, 0);
   public static final Quadruple POSITIVE_INFINITY =
-      new Quadruple(false, (int) QuadrupleBuilder.EXPONENT_OF_INFINITY, 0, 0);
+      new Quadruple(false, (int) EXPONENT_OF_INFINITY, 0, 0);
 
   private static final Quadruple MIN_LONG = new Quadruple(true, bias(63), 0, 0);
   private static final Quadruple POSITIVE_ONE = new Quadruple(false, bias(0), 0, 0);
   private static final Quadruple NEGATIVE_ONE = new Quadruple(true, bias(0), 0, 0);
 
+  private final boolean negative;
+  private final int biasedExponent;
+  private final long mantHi;
+  private final long mantLo;
+
+  /** Build a new quadruple from its raw representation - sign, biased exponent, 128-bit mantissa. */
+  public Quadruple(boolean negative, int biasedExponent, long mantHi, long mantLo) {
+    this.negative = negative;
+    this.biasedExponent = biasedExponent;
+    this.mantHi = mantHi;
+    this.mantLo = mantLo;
+  }
+
+  /** Return the sign of this {@link Quadruple}. */
+  public boolean negative() {
+    return negative;
+  }
+
+  /** Return the unsigned-32-bit biased exponent of this {@link Quadruple}. */
+  public int biasedExponent() {
+    return biasedExponent;
+  }
+
+  /** Return the high-order unsigned-64-bits of the mantissa of this {@link Quadruple}. */
+  public long mantHi() {
+    return mantHi;
+  }
+
+  /** Return the low-order unsigned-64-bits of the mantissa of this {@link Quadruple}. */
+  public long mantLo() {
+    return mantLo;
+  }
+
+  /** Return the (unbiased) exponent of this {@link Quadruple}. */
   public int exponent() {
     return biasedExponent - QuadrupleBuilder.EXPONENT_BIAS;
   }
 
-  // Compare two quadruples, with -0 < 0, and NaNs larger than all numbers.
+  /** Return true if this {@link Quadruple} is -0 or +0 */
+  public boolean isZero() {
+    return biasedExponent == 0 && mantHi == 0 && mantLo == 0;
+  }
+
+  /** Return true if this {@link Quadruple} is -infinity or +infinity */
+  public boolean isInfinite() {
+    return biasedExponent == (int) EXPONENT_OF_INFINITY && mantHi == 0 && mantLo == 0;
+  }
+
+  /** Return true if this {@link Quadruple} is a NaN. */
+  public boolean isNaN() {
+    return biasedExponent == (int) EXPONENT_OF_INFINITY && !(mantHi == 0 && mantLo == 0);
+  }
+
+  // equals (and hashCode) follow Double.equals: all NaNs are equal and -0 != 0
+
+  @Override
+  public boolean equals(Object other) {
+    if (!(other instanceof Quadruple)) {
+      return false;
+    }
+    Quadruple otherQuadruple = (Quadruple) other;
+    if (isNaN()) {
+      return otherQuadruple.isNaN();
+    } else {
+      return negative == otherQuadruple.negative
+          && biasedExponent == otherQuadruple.biasedExponent
+          && mantHi == otherQuadruple.mantHi
+          && mantLo == otherQuadruple.mantLo;
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    if (isNaN()) {
+      return HASH_NAN;
+    } else {
+      int hashCode = Boolean.hashCode(negative);
+      hashCode = hashCode * 31 + Integer.hashCode(biasedExponent);
+      hashCode = hashCode * 31 + Long.hashCode(mantHi);
+      hashCode = hashCode * 31 + Long.hashCode(mantLo);
+      return hashCode;
+    }
+  }
+
+  private static final int HASH_NAN = 31 * 31 * Integer.hashCode((int) EXPONENT_OF_INFINITY);
+
+  // Compare two quadruples, with -0 < 0, and all NaNs equal and larger than all numbers.
   @Override
   public int compareTo(Quadruple other) {
+    if (isNaN()) {
+      return other.isNaN() ? 0 : 1;
+    }
+    if (other.isNaN()) {
+      return -1;
+    }
     int lessThan;
     int greaterThan;
     if (negative) {
@@ -143,8 +231,8 @@ public record Quadruple(boolean negative, int biasedExponent, long mantHi, long 
    *   <li>NaN for Quadruple.NaN
    *   <li>Infinity or +Infinity for Quadruple.POSITIVE_INFINITY
    *   <li>-Infinity for Quadruple.NEGATIVE_INFINITY
-   *   <li>regular expression: [+-]?[0-9]*(.[0-9]*)?([eE][+-]?[0-9]+)? - the exponent cannot be more than 9
-   *       digits, and the whole string cannot be empty
+   *   <li>regular expression: [+-]?[0-9]*(.[0-9]*)?([eE][+-]?[0-9]+)? - the exponent cannot be more
+   *       than 9 digits, and the whole string cannot be empty
    * </ul>
    */
   public static Quadruple fromString(String s) {

@@ -15,15 +15,19 @@
 package com.google.cloud.datastore.core.quadruple;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 public class QuadrupleTest {
   private static final int QUADRUPLE_BIAS = 0x7fff_ffff;
+  private static final Quadruple OTHER_NAN = new Quadruple(true, (int) 0xFFFFFFFFL, 1, 1);
 
   @Test
   public void simple() {
@@ -37,32 +41,118 @@ public class QuadrupleTest {
   }
 
   @Test
+  public void orderAndEquivalence() {
+    List<List<Quadruple>> orderedEquivalences = new ArrayList<>();
+
+    add(
+        orderedEquivalences,
+        Quadruple.NEGATIVE_INFINITY,
+        Quadruple.fromDouble(Double.NEGATIVE_INFINITY),
+        Quadruple.fromString("-Infinity"));
+    add(
+        orderedEquivalences,
+        Quadruple.fromLong(Long.MIN_VALUE),
+        Quadruple.fromDouble((double) Long.MIN_VALUE),
+        Quadruple.fromString(Long.toString(Long.MIN_VALUE)));
+    add(orderedEquivalences, Quadruple.fromDouble(-1.125), Quadruple.fromString("-1.125"));
+    add(
+        orderedEquivalences,
+        Quadruple.fromLong(-1),
+        Quadruple.fromDouble(-1),
+        Quadruple.fromString("-1"));
+    add(orderedEquivalences, Quadruple.fromDouble(-0.0), Quadruple.NEGATIVE_ZERO);
+    add(
+        orderedEquivalences,
+        Quadruple.fromDouble(0.0),
+        Quadruple.fromLong(0),
+        Quadruple.POSITIVE_ZERO);
+    add(
+        orderedEquivalences,
+        Quadruple.fromLong(325),
+        Quadruple.fromDouble(325),
+        Quadruple.fromString("325"));
+    // Long.MAX_VALUE is not exactly representable as a double.
+    add(
+        orderedEquivalences,
+        Quadruple.fromLong(Long.MAX_VALUE),
+        Quadruple.fromString(Long.toString(Long.MAX_VALUE)));
+    add(
+        orderedEquivalences,
+        Quadruple.POSITIVE_INFINITY,
+        Quadruple.fromDouble(Double.POSITIVE_INFINITY),
+        Quadruple.fromString("Infinity"),
+        Quadruple.fromString("+Infinity"));
+    add(orderedEquivalences, Quadruple.NaN, OTHER_NAN, Quadruple.fromString("NaN"));
+
+    int classCount = orderedEquivalences.size();
+    for (int classIndex1 = 0; classIndex1 < classCount; classIndex1++) {
+      List<Quadruple> class1 = orderedEquivalences.get(classIndex1);
+      for (int classIndex2 = 0; classIndex2 < classCount; classIndex2++) {
+        List<Quadruple> class2 = orderedEquivalences.get(classIndex2);
+
+        for (int index1 = 0; index1 < class1.size(); index1++) {
+          Quadruple q1 = class1.get(index1);
+          for (int index2 = 0; index2 < class2.size(); index2++) {
+            Quadruple q2 = class2.get(index2);
+            String testCase = classIndex1 + "/" + index1 + " <-> " + classIndex2 + "/" + index2;
+            if (classIndex1 == classIndex2) {
+              assertEquals(q1, q2, testCase);
+              assertTrue(q1.compareTo(q2) == 0, testCase);
+              assertEquals(q1.hashCode(), q2.hashCode(), testCase);
+            } else if (classIndex1 < classIndex2) {
+              assertNotEquals(q1, q2, testCase);
+              assertTrue(q1.compareTo(q2) < 0, testCase);
+            } else {
+              assertNotEquals(q1, q2);
+              assertTrue(q1.compareTo(q2) > 0, testCase);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private static void add(List<List<Quadruple>> orderedEquivalences, Quadruple... equivalent) {
+    List<Quadruple> equivalences = new ArrayList<>();
+    for (Quadruple q : equivalent) {
+      equivalences.add(q);
+    }
+    orderedEquivalences.add(equivalences);
+  }
+
+  @Test
   public void infinityAndNaN() {
-    assertEquals(Quadruple.fromDouble(Double.NaN), Quadruple.NaN);
-    assertEquals(toDouble(Quadruple.NaN), Double.NaN);
-
-    assertEquals(Quadruple.fromDouble(Double.NEGATIVE_INFINITY), Quadruple.NEGATIVE_INFINITY);
     assertEquals(toDouble(Quadruple.NEGATIVE_INFINITY), Double.NEGATIVE_INFINITY);
-
-    assertEquals(Quadruple.fromDouble(Double.POSITIVE_INFINITY), Quadruple.POSITIVE_INFINITY);
     assertEquals(toDouble(Quadruple.POSITIVE_INFINITY), Double.POSITIVE_INFINITY);
 
-    assertLessThan(Quadruple.NEGATIVE_INFINITY, Quadruple.POSITIVE_INFINITY);
-    assertLessThan(Quadruple.NEGATIVE_INFINITY, Quadruple.NaN);
-    assertLessThan(Quadruple.POSITIVE_INFINITY, Quadruple.NaN);
+    assertEquals(toDouble(Quadruple.NaN), Double.NaN);
+    assertEquals(toDouble(OTHER_NAN), Double.NaN);
+
+    assertTrue(Quadruple.NaN.isNaN());
+    assertTrue(OTHER_NAN.isNaN());
+    assertFalse(Quadruple.NEGATIVE_INFINITY.isNaN());
+    assertFalse(Quadruple.POSITIVE_ZERO.isNaN());
+    assertFalse(Quadruple.fromLong(1).isNaN());
+
+    assertTrue(Quadruple.NEGATIVE_INFINITY.isInfinite());
+    assertTrue(Quadruple.POSITIVE_INFINITY.isInfinite());
+    assertFalse(Quadruple.NaN.isInfinite());
+    assertFalse(Quadruple.POSITIVE_ZERO.isInfinite());
+    assertFalse(Quadruple.fromLong(1).isInfinite());
   }
 
   @Test
   public void zero() {
     assertEquals(toDouble(Quadruple.POSITIVE_ZERO), 0.0);
-    assertEquals(Quadruple.fromDouble(0.0), Quadruple.POSITIVE_ZERO);
     assertEquals(toDouble(Quadruple.NEGATIVE_ZERO), -0.0);
-    assertEquals(Quadruple.fromDouble(-0.0), Quadruple.NEGATIVE_ZERO);
-    assertEquals(Quadruple.fromLong(0), Quadruple.POSITIVE_ZERO);
 
-    assertLessThan(Quadruple.NEGATIVE_INFINITY, Quadruple.NEGATIVE_ZERO);
-    assertLessThan(Quadruple.NEGATIVE_ZERO, Quadruple.POSITIVE_ZERO);
-    assertLessThan(Quadruple.POSITIVE_ZERO, Quadruple.POSITIVE_INFINITY);
+    assertTrue(Quadruple.NEGATIVE_ZERO.isZero());
+    assertTrue(Quadruple.POSITIVE_ZERO.isZero());
+    assertFalse(Quadruple.NEGATIVE_INFINITY.isZero());
+    assertFalse(Quadruple.POSITIVE_INFINITY.isZero());
+    assertFalse(Quadruple.NaN.isZero());
+    assertFalse(OTHER_NAN.isZero());
+    assertFalse(Quadruple.fromLong(1).isZero());
   }
 
   @Test
@@ -180,14 +270,6 @@ public class QuadrupleTest {
         assertEquals(otherQ, q);
       }
     }
-  }
-
-  @Test
-  public void fromString_special() {
-    assertEquals(Quadruple.NaN, Quadruple.fromString("NaN"));
-    assertEquals(Quadruple.POSITIVE_INFINITY, Quadruple.fromString("Infinity"));
-    assertEquals(Quadruple.POSITIVE_INFINITY, Quadruple.fromString("+Infinity"));
-    assertEquals(Quadruple.NEGATIVE_INFINITY, Quadruple.fromString("-Infinity"));
   }
 
   @Test

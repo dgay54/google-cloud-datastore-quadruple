@@ -14,18 +14,18 @@
 
 all: quadruple_builder.o quadruple.o
 
-quadruple.o: quadruple.h quadruple_builder.h quadruple.cpp
-	g++ -o "$@" -c -std=c++14 quadruple.cpp
+quadruple.o: quadruple.h quadruple_builder.h quadruple.cc
+	g++ -o "$@" -c -std=c++14 quadruple.cc
 
-quadruple_builder.o: quadruple_builder.h quadruple_builder.cpp
-	g++ -o "$@" -c -std=c++14 quadruple_builder.cpp
+quadruple_builder.o: quadruple_builder.h quadruple_builder.cc
+	g++ -o "$@" -c -std=c++14 quadruple_builder.cc
 
 test: quadruple_builder_test quadruple_test
 	./quadruple_builder_test
 	./quadruple_test
 
-quadruple_builder_test: quadruple_builder.o quadruple_builder_test.cpp
-	g++ -o "$@" quadruple_builder_test.cpp quadruple_builder.o -lgtest
+quadruple_builder_test: quadruple_builder.o quadruple_builder_test.cc
+	g++ -o "$@" quadruple_builder_test.cc quadruple_builder.o -lgtest
 
-quadruple_test: quadruple_test.cpp quadruple.o
-	g++ -o "$@" quadruple_test.cpp quadruple.o quadruple_builder.o -lgtest
+quadruple_test: quadruple_test.cc quadruple.o
+	g++ -o "$@" quadruple_test.cc quadruple.o quadruple_builder.o -lgtest

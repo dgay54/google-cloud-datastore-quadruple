@@ -14,15 +14,18 @@
 
 all: quadruple_builder.o quadruple.o
 
-quadruple.o: quadruple.h quadruple_builder.h quadruple.cc
-	g++ -o "$@" -c -std=c++14 quadruple.cc
-
-quadruple_builder.o: quadruple_builder.h quadruple_builder.cc
-	g++ -o "$@" -c -std=c++14 quadruple_builder.cc
+clean:
+	rm -f *.o quadruple_builder_test quadruple_test
 
 test: quadruple_builder_test quadruple_test
 	./quadruple_builder_test
 	./quadruple_test
+
+quadruple.o: quadruple.h quadruple_builder.h quadruple.cc
+	g++ -Wall -o "$@" -c -std=c++14 quadruple.cc
+
+quadruple_builder.o: quadruple_builder.h quadruple_builder.cc
+	g++ -Wall -Wmissing-braces -o "$@" -c -std=c++14 quadruple_builder.cc
 
 quadruple_builder_test: quadruple_builder.o quadruple_builder_test.cc
 	g++ -o "$@" quadruple_builder_test.cc quadruple_builder.o -lgtest

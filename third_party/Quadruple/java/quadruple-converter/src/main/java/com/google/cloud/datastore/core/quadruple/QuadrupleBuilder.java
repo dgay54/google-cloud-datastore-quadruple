@@ -352,12 +352,12 @@ public class QuadrupleBuilder {
   // Divides the unpacked value stored in the given buffer by 10
   // @param buffer contains the unpacked value to divide (32 least significant bits are used)
   private void divBuffBy10(long[] buffer) {
-    int maxIdx = (buffer).length - 1;
+    int maxIdx = (buffer).length;
     // big/endian
-    for (int i = (0); i < (maxIdx + 1); i++) {
+    for (int i = (0); i < (maxIdx); i++) {
       long r = buffer[i] % 10;
       buffer[i] = ((buffer[i]) / (10));
-      if (i < maxIdx) {
+      if (i + 1 < maxIdx) {
         buffer[i + 1] += r << 32;
       }
     }
@@ -439,7 +439,7 @@ public class QuadrupleBuilder {
       return;
     }
     exp2 += roundUp(product); // round up, may require exponent correction
-    if (exp2 >= EXPONENT_OF_INFINITY) {
+    if (((long)(exp2)) >= EXPONENT_OF_INFINITY) {
       this.exponent = ((int)(EXPONENT_OF_INFINITY));
     } else {
       this.exponent = ((int)(exp2));

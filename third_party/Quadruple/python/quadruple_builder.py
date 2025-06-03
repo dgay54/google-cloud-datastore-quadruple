@@ -352,12 +352,12 @@ class QuadrupleBuilder(object):
   # Divides the unpacked value stored in the given buffer by 10
   # @param buffer contains the unpacked value to divide (32 least significant bits are used)
   def divBuffBy10(self, buffer):
-    maxIdx = len((buffer)) - 1;
+    maxIdx = len((buffer));
     # big/endian
-    for i in range(0, maxIdx + 1):
+    for i in range(0, maxIdx):
       r = buffer[i] % 10;
       buffer[i] = ((buffer[i]) // (10));
-      if i < maxIdx:
+      if i + 1 < maxIdx:
         buffer[i + 1] += r << 32;
       
     
@@ -439,7 +439,7 @@ class QuadrupleBuilder(object):
       return;
     
     exp2 += self.roundUp(product); # round up, may require exponent correction
-    if exp2 >= self.EXPONENT_OF_INFINITY:
+    if (exp2) >= self.EXPONENT_OF_INFINITY:
       self.exponent = (self.EXPONENT_OF_INFINITY);
     else:
       self.exponent = (exp2);

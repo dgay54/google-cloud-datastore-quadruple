@@ -378,12 +378,12 @@ dnl  limitations under the License.
   # Divides the unpacked value stored in the given buffer by 10
   # @param buffer contains the unpacked value to divide (32 least significant bits are used)
   def_array_fn(array_size(N), ret_void, divBuffBy10, uint64_array_decl(buffer, N))
-    int32_decl(maxIdx) = array_len(buffer) - 1;
+    int32_decl(maxIdx) = array_len(buffer);
     # big/endian
-    c_for_range(i, 0, maxIdx + 1)
+    c_for_range(i, 0, maxIdx)
       uint64_decl(r) = buffer[i] % 10;
       buffer[i] = int_divide(buffer[i], 10);
-      c_if(i < maxIdx)
+      c_if(i + 1 < maxIdx)
         buffer[i + 1] += r << 32;
       c_end
     c_end
@@ -465,7 +465,7 @@ dnl  limitations under the License.
       return;
     c_end
     exp2 += fn(roundUp)(product); # round up, may require exponent correction
-    c_if(exp2 >= cst(EXPONENT_OF_INFINITY))
+    c_if(to_uint64(exp2) >= cst(EXPONENT_OF_INFINITY))
       field(exponent) = to_exponent(cst(EXPONENT_OF_INFINITY));
     c_else
       field(exponent) = to_exponent(exp2);

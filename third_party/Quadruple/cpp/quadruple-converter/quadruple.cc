@@ -129,7 +129,6 @@ bool Quadruple::Parse(std::string s) {
       i++;
     }
   }
-  int firstDigit = i;
   while (i < len && isdigit(s[i])) {
     digits[j++] = static_cast<uint8_t>(s[i++] - '0');
   }

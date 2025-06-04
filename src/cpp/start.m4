@@ -17,13 +17,12 @@ define(fn, `$1')dnl
 define(ret_void, `void')dnl
 define(ret_bool, `bool')dnl
 define(ret_int32, `int32_t')dnl
-define(ret_int64, `int64_t')dnl
 define(ret_double, `double')dnl
+define(let, `$1')dnl
 define(bool_decl, `bool $1')dnl
 define(digit_decl, `uint8_t $1')dnl
 define(digits_decl, `std::vector<uint8_t>& $1')dnl
 define(int32_decl, `int32_t $1')dnl
-define(int64_decl, `int64_t $1')dnl
 define(uint64_decl, `uint64_t $1')dnl
 define(uint64_array_decl, `std::array<uint64_t, $2>& $1')dnl
 define(uint64_array_array_decl, `std::array<std::array<uint64_t, 4>, 33>* $1')dnl
@@ -45,6 +44,7 @@ define(c_end, `}')dnl
 
 define(to_digit, `(static_cast<uint8_t>($1))')dnl
 define(to_exponent, `(static_cast<uint32_t>($1))')dnl
+define(to_double, `(static_cast<double>($1))')dnl
 define(to_uint64, `(static_cast<uint64_t>($1))')dnl
 define(wrap_uint64, `(static_cast<uint64_t>($1))')dnl
 define(lsr, `(($1) >> ($2))')dnl
@@ -52,7 +52,7 @@ define(int_divide, `(($1) / ($2))')dnl
 
 define(f_number_of_leading_zeros, `__builtin_clzll($1)')dnl
 define(f_log, `log($1)')dnl
-define(f_floor, `((uint64_t) floor($1))')dnl
+define(f_floor, `floor($1)')dnl
 define(f_iabs, `static_cast<int32_t>(labs($1))')dnl
 
 $include "quadruple_builder.h"

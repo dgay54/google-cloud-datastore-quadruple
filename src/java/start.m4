@@ -16,13 +16,12 @@ define(fn, `$1')dnl
 define(ret_void, `void')dnl
 define(ret_bool, `boolean')dnl
 define(ret_int32, `int')dnl
-define(ret_int64, `long')dnl
 define(ret_double, `double')dnl
+define(let, `$1')dnl
 define(bool_decl, `boolean $1')dnl
 define(digit_decl, `byte $1')dnl
 define(digits_decl, `byte[] $1')dnl
 define(int32_decl, `int $1')dnl
-define(int64_decl, `long $1')dnl
 define(uint64_decl, `long $1')dnl
 define(uint64_array_decl, `long[] $1')dnl
 define(uint64_array_array_decl, `long[][] $1')dnl
@@ -43,8 +42,9 @@ define(c_for_range_down, `for (int $1 = ($2) - 1; $1 >= ($3); $1--) {')dnl
 define(c_end, `}')dnl
 
 define(to_digit, `((byte)($1))')dnl
-define(to_exponent, `((int)($1))')dnl
+define(to_exponent, `((int)(long)($1))')dnl
 define(to_uint64, `((long)($1))')dnl
+define(to_double, `((double)($1))')dnl
 define(wrap_uint64, `($1)')dnl
 define(lsr, `(($1) >>> ($2))')dnl
 define(int_divide, `(($1) / ($2))')dnl
@@ -58,7 +58,7 @@ package com.google.cloud.datastore.core.quadruple;
 
 public class QuadrupleBuilder {
 
-  public static QuadrupleBuilder parseDecimal(byte[] digits, long exp10) {
+  public static QuadrupleBuilder parseDecimal(byte[] digits, int exp10) {
     QuadrupleBuilder q = new QuadrupleBuilder();
     q.parse(digits, exp10);
     return q;

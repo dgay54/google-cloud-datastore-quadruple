@@ -48,7 +48,7 @@ class QuadrupleBuilder(object):
   HIGH_BIT = 0x8000_0000_0000_0000
 
   # Just for convenience: 0x8000_0000L, 2^31
-  POW_2_31_L = 0x8000_0000
+  POW_2_31 = 2147483648.0
 
   # Just for convenience: 0x0000_0000_FFFF_FFFFL
   LOWER_32_BITS = 0x0000_0000_FFFF_FFFF
@@ -402,8 +402,8 @@ class QuadrupleBuilder(object):
     mant10 = mantissa[0] << 31 | ((mantissa[1]) >> (1)); # Higher 63 bits of the mantissa, in range
     # 0x0CC..CCC -- 0x7FF..FFF (2^63/10 -- 2^63-1)
     # decimal value of the mantissa in range 1.0..9.9999...
-    mant10d = mant10 / self.TWO_POW_63_DIV_10;
-    return math.floor((exp10 * self.LOG2_10 + self.log2(mant10d))); # Binary exponent
+    mant10d = (mant10) / self.TWO_POW_63_DIV_10;
+    return math.floor(((exp10) * self.LOG2_10 + self.log2(mant10d))); # Binary exponent
   
 
   # Calculates log<sub>2</sub> of the given x
@@ -423,7 +423,7 @@ class QuadrupleBuilder(object):
     self.multBuffBy10(product); # "Quasidecimals" are numbers divided by 10
 
     # The powerOf2[0] is stored as an unsigned value
-    if ((powerOf2[0]) & 0xffffffffffffffff) != ((-exp10) & 0xffffffffffffffff):
+    if (powerOf2[0]) != (-exp10):
       # For some combinations of exp2 and exp10, additional multiplication needed
       # (see mant2_from_M_E_e.xls)
       self.multBuffBy10(product);
@@ -439,6 +439,7 @@ class QuadrupleBuilder(object):
       return;
     
     exp2 += self.roundUp(product); # round up, may require exponent correction
+
     if (exp2) >= self.EXPONENT_OF_INFINITY:
       self.exponent = (self.EXPONENT_OF_INFINITY);
     else:
@@ -469,7 +470,7 @@ class QuadrupleBuilder(object):
     
 
     # 2^31 = 0x8000_0000L; a single bit that will be shifted right at every iteration
-    currPowOf2 = self.POW_2_31_L;
+    currPowOf2 = self.POW_2_31;
     idx = 32; # Index in the table of powers
     first_power = True;
 
@@ -488,7 +489,7 @@ class QuadrupleBuilder(object):
         exp -= currPowOf2;
       
       idx -= 1;
-      currPowOf2 = ((currPowOf2) >> (1));
+      currPowOf2 = currPowOf2 * 0.5; # Note: this is exact
     
   
 
@@ -711,20 +712,21 @@ class QuadrupleBuilder(object):
   # @param exp2 the exponent of the power of two to divide by, expected to be
   def divBuffByPower2(self, buffer,exp2):
     maxIdx = len((buffer)) - 1;
-    backShift = 32 - abs((exp2));
+    backShift = (32 - abs((exp2)));
 
     if exp2 > 0: # Shift to the right
+      exp2Shift = (exp2);
       for i in range((maxIdx + 1) - 1, (1) - 1, -1):
-        buffer[i] = ((buffer[i]) >> (exp2)) | ((buffer[i - 1] << backShift) & self.LOWER_32_BITS);
+        buffer[i] = ((buffer[i]) >> (exp2Shift)) | ((buffer[i - 1] << backShift) & self.LOWER_32_BITS);
       
-      buffer[0] = ((buffer[0]) >> (exp2)); # Preserve the high half of buff[0]
+      buffer[0] = ((buffer[0]) >> (exp2Shift)); # Preserve the high half of buff[0]
     elif exp2 < 0: # Shift to the left
-      exp2 = -exp2;
-      buffer[0] = (((buffer[0] << exp2) | ((buffer[1]) >> (backShift))) & 0xffffffffffffffff); # Preserve the high half of buff[0]
+      exp2Shift = (-exp2);
+      buffer[0] = (((buffer[0] << exp2Shift) | ((buffer[1]) >> (backShift))) & 0xffffffffffffffff); # Preserve the high half of buff[0]
       for i in range(1, maxIdx):
-        buffer[i] = ((((buffer[i] << exp2) & self.LOWER_32_BITS) | ((buffer[i + 1]) >> (backShift))) & 0xffffffffffffffff);
+        buffer[i] = ((((buffer[i] << exp2Shift) & self.LOWER_32_BITS) | ((buffer[i + 1]) >> (backShift))) & 0xffffffffffffffff);
       
-      buffer[maxIdx] = (buffer[maxIdx] << exp2) & self.LOWER_32_BITS;
+      buffer[maxIdx] = (buffer[maxIdx] << exp2Shift) & self.LOWER_32_BITS;
     
   
 
@@ -739,7 +741,7 @@ class QuadrupleBuilder(object):
     for i in range((maxIdx + 1) - 1, (1) - 1, -1):              # from the lowest word upwards, except the highest
       if (buff[i] & self.HIGHER_32_BITS) != 0:
         buff[i] &= self.LOWER_32_BITS;
-        buff[i-1]+= 1;
+        buff[i-1] += 1;
       else:
         break;
       

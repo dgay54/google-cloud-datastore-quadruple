@@ -27,6 +27,7 @@ define(ret_bool, {})dnl
 define(ret_int32, {})dnl
 define(ret_int64, {})dnl
 define(ret_double, {})dnl
+define(let, {$1})dnl
 define(bool_decl, $1)dnl
 define(digit_decl, $1)dnl
 define(digits_decl, $1)dnl
@@ -53,8 +54,9 @@ define(c_end, {})dnl
 
 define(to_digit, {($1)})dnl
 define(to_exponent, {($1)})dnl
+define(to_double, {($1)})dnl
 define(to_uint64, {($1)})dnl
-define(wrap_uint64, (($1) & 0xffffffffffffffff))dnl
+define(wrap_uint64, {(($1) & 0xffffffffffffffff)})dnl
 define(lsr, {(($1) >> ($2))})dnl
 define(int_divide, {(($1) // ($2))})dnl
 

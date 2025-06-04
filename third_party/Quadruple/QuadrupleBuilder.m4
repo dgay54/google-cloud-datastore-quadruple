@@ -30,7 +30,7 @@ dnl  limitations under the License.
   uint64_constant(HIGH_BIT, 0x8000_0000_0000_0000)
 
   # Just for convenience: 0x8000_0000L, 2^31
-  uint64_constant(POW_2_31_L, 0x8000_0000)
+  double_constant(POW_2_31, 2147483648.0)
 
   # Just for convenience: 0x0000_0000_FFFF_FFFFL
   uint64_constant(LOWER_32_BITS, 0x0000_0000_FFFF_FFFF)
@@ -306,15 +306,15 @@ dnl  limitations under the License.
     uint64_array(buffer6x32C, 6)
     uint64_array(buffer12x32, 12)
 
-  def_fn(ret_void, parse, digits_decl(digits), int64_decl(exp10))
+  def_fn(ret_void, parse, digits_decl(digits), int32_decl(exp10))
     exp10 += array_len(digits) - 1; # digits is viewed as x.yyy below.
     field(exponent) = 0;
-    field(mantHi) = 0;
-    field(mantLo) = 0;
+    field(mantHi) = cst_uint64(0);
+    field(mantLo) = cst_uint64(0);
 
     # Finds numeric value of the decimal mantissa
-    uint64_array_decl(mantissa, 6) = field(buffer6x32C);
-    int32_decl(exp10Corr) = fn(parseMantissa)(digits, mantissa);
+    let(uint64_array_decl(mantissa, 6)) = field(buffer6x32C);
+    let(int32_decl(exp10Corr)) = fn(parseMantissa)(digits, mantissa);
 
     c_if(exp10Corr == 0 c_and fn(isEmpty)(mantissa))
       # Mantissa == 0
@@ -333,29 +333,29 @@ dnl  limitations under the License.
       return;
     c_end
 
-    int64_decl(exp2) = fn(findBinaryExponent)(exp10, mantissa);
+    let(double_decl(exp2)) = fn(findBinaryExponent)(exp10, mantissa);
     # Finds binary mantissa and possible exponent correction. Fills the fields.
     fn(findBinaryMantissa)(exp10, exp2, mantissa);
   c_end
 
   def_fn(ret_int32, parseMantissa, digits_decl(digits), uint64_array_decl(mantissa, 6))
     c_for_range(i, 0, 6)
-      mantissa[i] = 0;
+      mantissa[i] = cst_uint64(0);
     c_end
 
     # Skip leading zeroes
-    int32_decl(firstDigit) = 0;
+    let(int32_decl(firstDigit)) = 0;
     c_while(firstDigit < array_len(digits) c_and digits[firstDigit] == 0)
       firstDigit += 1;
     c_end
     c_if(firstDigit == array_len(digits))
       return 0; # All zeroes
     c_end
-    int32_decl(expCorr) = -firstDigit;
+    let(int32_decl(expCorr)) = -firstDigit;
 
     # Limit the string length to avoid unnecessary fuss
     c_if(array_len(digits) - firstDigit > cst(MAX_MANTISSA_LENGTH))
-      bool_decl(carry) = digits[cst(MAX_MANTISSA_LENGTH)] >= 5; # The highest digit to be truncated
+      let(bool_decl(carry)) = digits[cst(MAX_MANTISSA_LENGTH)] >= 5; # The highest digit to be truncated
 
       new_digit_array(truncated, cst(MAX_MANTISSA_LENGTH));
       c_for_range(i, 0, cst(MAX_MANTISSA_LENGTH))
@@ -369,7 +369,7 @@ dnl  limitations under the License.
     c_end
 
     c_for_range_down(i, array_len(digits), firstDigit) # digits, starting from the last
-      mantissa[0] |= to_uint64(digits[i]) << 32;
+      mantissa[0] |= to_uint64(digits[i]) << cst_uint64(32);
       fn(divBuffBy10)(mantissa);
     c_end
     return expCorr;
@@ -378,13 +378,13 @@ dnl  limitations under the License.
   # Divides the unpacked value stored in the given buffer by 10
   # @param buffer contains the unpacked value to divide (32 least significant bits are used)
   def_array_fn(array_size(N), ret_void, divBuffBy10, uint64_array_decl(buffer, N))
-    int32_decl(maxIdx) = array_len(buffer);
+    let(int32_decl(maxIdx)) = array_len(buffer);
     # big/endian
     c_for_range(i, 0, maxIdx)
-      uint64_decl(r) = buffer[i] % 10;
-      buffer[i] = int_divide(buffer[i], 10);
+      let(uint64_decl(r)) = buffer[i] % cst_uint64(10);
+      buffer[i] = int_divide(buffer[i], cst_uint64(10));
       c_if(i + 1 < maxIdx)
-        buffer[i + 1] += r << 32;
+        buffer[i + 1] += r << cst_uint64(32);
       c_end
     c_end
   c_end
@@ -394,7 +394,7 @@ dnl  limitations under the License.
   # @return {@code true} if the buffer is empty, {@code false} otherwise
   def_array_fn(array_size(N), ret_bool, isEmpty, uint64_array_decl(buffer, N))
     c_for_range(i, 0, array_len(buffer))
-      c_if(buffer[i] != 0)
+      c_if(buffer[i] != cst_uint64(0))
         return false;
       c_end
     c_end
@@ -407,7 +407,7 @@ dnl  limitations under the License.
   #     rounding-up, 0 otherwise
   def_fn(ret_int32, addCarry, digits_decl(digits))
     c_for_range_down(i, array_len(digits), 0) # starting with the lowest digit
-      digit_decl(c) = digits[i];
+      let(digit_decl(c)) = digits[i];
       c_if(c == 9)
         digits[i] = 0;
       c_else
@@ -424,12 +424,12 @@ dnl  limitations under the License.
   # @param exp10 decimal exponent
   # @param mantissa array of longs containing decimal mantissa (divided by 10)
   # @return found value of binary exponent
-  def_fn(ret_int64, findBinaryExponent, int64_decl(exp10), uint64_array_decl(mantissa, 6))
-    uint64_decl(mant10) = mantissa[0] << 31 | lsr(mantissa[1], 1); # Higher 63 bits of the mantissa, in range
+  def_fn(ret_double, findBinaryExponent, int32_decl(exp10), uint64_array_decl(mantissa, 6))
+    let(uint64_decl(mant10)) = mantissa[0] << cst_uint64(31) | lsr(mantissa[1], cst_uint64(1)); # Higher 63 bits of the mantissa, in range
     # 0x0CC..CCC -- 0x7FF..FFF (2^63/10 -- 2^63-1)
     # decimal value of the mantissa in range 1.0..9.9999...
-    double_decl(mant10d) = mant10 / cst(TWO_POW_63_DIV_10);
-    return f_floor(exp10 * cst(LOG2_10) + fn(log2)(mant10d)); # Binary exponent
+    let(double_decl(mant10d)) = to_double(mant10) / cst(TWO_POW_63_DIV_10);
+    return f_floor(to_double(exp10) * cst(LOG2_10) + fn(log2)(mant10d)); # Binary exponent
   c_end
 
   # Calculates log<sub>2</sub> of the given x
@@ -440,16 +440,16 @@ dnl  limitations under the License.
     return cst(LOG2_E) * f_log(x);
   c_end
 
-  def_fn(ret_void, findBinaryMantissa, int64_decl(exp10), int64_decl(exp2), uint64_array_decl(mantissa, 6))
+  def_fn(ret_void, findBinaryMantissa, int32_decl(exp10), double_decl(exp2), uint64_array_decl(mantissa, 6))
      # pow(2, -exp2): division by 2^exp2 is multiplication by 2^(-exp2) actually
-    uint64_array_decl(powerOf2, 4) = field(buffer4x64B);
+    let(uint64_array_decl(powerOf2, 4)) = field(buffer4x64B);
     fn(powerOfTwo)(-exp2, powerOf2);
-    uint64_array_decl(product, 12) = field(buffer12x32); # use it for the product (M * 10^E / 2^e)
+    let(uint64_array_decl(product, 12)) = field(buffer12x32); # use it for the product (M * 10^E / 2^e)
     fn(multUnpacked6x32byPacked)(mantissa, powerOf2, product); # product in buff_12x32
     fn(multBuffBy10)(product); # "Quasidecimals" are numbers divided by 10
 
     # The powerOf2[0] is stored as an unsigned value
-    c_if(wrap_uint64(powerOf2[0]) != wrap_uint64(-exp10))
+    c_if(to_uint64(powerOf2[0]) != to_uint64(-exp10))
       # For some combinations of exp2 and exp10, additional multiplication needed
       # (see mant2_from_M_E_e.xls)
       fn(multBuffBy10)(product);
@@ -465,12 +465,13 @@ dnl  limitations under the License.
       return;
     c_end
     exp2 += fn(roundUp)(product); # round up, may require exponent correction
+
     c_if(to_uint64(exp2) >= cst(EXPONENT_OF_INFINITY))
       field(exponent) = to_exponent(cst(EXPONENT_OF_INFINITY));
     c_else
       field(exponent) = to_exponent(exp2);
-      field(mantHi) = wrap_uint64((product[0] << 32) + product[1]);
-      field(mantLo) = wrap_uint64((product[2] << 32) + product[3]);
+      field(mantHi) = wrap_uint64((product[0] << cst_uint64(32)) + product[1]);
+      field(mantLo) = wrap_uint64((product[2] << cst_uint64(32)) + product[3]);
     c_end
   c_end
 
@@ -481,23 +482,23 @@ dnl  limitations under the License.
   # uses arrays <b><i>buffer4x64B</b>, buffer6x32A, buffer6x32B, buffer12x32</i></b>,
   # @param exp the power to raise 2 to
   # @param power (result) the value of {@code2^exp}
-  def_fn(ret_void, powerOfTwo, int64_decl(exp), uint64_array_decl(power, 4))
+  def_fn(ret_void, powerOfTwo, double_decl(exp), uint64_array_decl(power, 4))
     c_if(exp == 0)
       fn(array_copy)(cst(POS_POWERS_OF_2)[0], power);
       return;
     c_end
 
     # positive powers of 2 (2^0, 2^1, 2^2, 2^4, 2^8 ... 2^(2^31) )
-    uint64_array_array_decl(powers) = ref(POS_POWERS_OF_2);
+    let(uint64_array_array_decl(powers)) = ref(POS_POWERS_OF_2);
     c_if(exp < 0)
       exp = -exp;
       powers = ref(NEG_POWERS_OF_2); # positive powers of 2 (2^0, 2^-1, 2^-2, 2^-4, 2^-8 ... 2^30)
     c_end
 
     # 2^31 = 0x8000_0000L; a single bit that will be shifted right at every iteration
-    int64_decl(currPowOf2) = cst(POW_2_31_L);
-    int32_decl(idx) = 32; # Index in the table of powers
-    bool_decl(first_power) = true;
+    let(double_decl(currPowOf2)) = cst(POW_2_31);
+    let(int32_decl(idx)) = 32; # Index in the table of powers
+    let(bool_decl(first_power)) = true;
 
     # if exp = b31 * 2^31 + b30 * 2^30 + .. + b0 * 2^0, where b0..b31 are the values of the bits in
     # exp, then 2^exp = 2^b31 * 2^b30 ... * 2^b0. Find the product, using a table of powers of 2.
@@ -514,7 +515,7 @@ dnl  limitations under the License.
         exp -= currPowOf2;
       c_end
       idx -= 1;
-      currPowOf2 = lsr(currPowOf2, 1);
+      currPowOf2 = currPowOf2 * 0.5; # Note: this is exact
     c_end
   c_end
 
@@ -533,7 +534,7 @@ dnl  limitations under the License.
   # the exponent respectively.
   def_fn(ret_void, multPacked3x64_AndAdjustExponent, uint64_array_decl(factor1, 4), uint64_array_decl(factor2, 4), uint64_array_decl(result, 4))
     fn(multPacked3x64_simply)(factor1, factor2, field(buffer12x32));
-    int32_decl(expCorr) = fn(correctPossibleUnderflow)(field(buffer12x32));
+    let(int32_decl(expCorr)) = fn(correctPossibleUnderflow)(field(buffer12x32));
     fn(pack_6x32_to_3x64)(field(buffer12x32), result);
 
     # result[0] is a signed int64 value stored in an uint64
@@ -549,7 +550,7 @@ dnl  limitations under the License.
   # @param result an array of 12 longs filled with the product of mantissas
   def_fn(ret_void, multPacked3x64_simply, uint64_array_decl(factor1, 4), uint64_array_decl(factor2, 4), uint64_array_decl(result, 12))
     c_for_range(i, 0, array_len(result))
-      result[i] = 0;
+      result[i] = cst_uint64(0);
     c_end
     # TODO2 19.01.16 21:23:06 for the next version -- rebuild the table of powers to make the
     # numbers unpacked, to avoid packing/unpacking
@@ -558,15 +559,15 @@ dnl  limitations under the License.
 
     c_for_range_down(i, 6, 0) # compute partial 32-bit products
       c_for_range_down(j, 6, 0)
-        uint64_decl(part) = field(buffer6x32A)[i] * field(buffer6x32B)[j];
+        let(uint64_decl(part)) = field(buffer6x32A)[i] * field(buffer6x32B)[j];
         result[j + i + 1] = wrap_uint64(result[j + i + 1] + (part & cst(LOWER_32_BITS)));
-        result[j + i] = wrap_uint64(result[j + i] + lsr(part, 32));
+        result[j + i] = wrap_uint64(result[j + i] + lsr(part, cst_uint64(32)));
       c_end
     c_end
 
     # Carry higher bits of the product to the lower bits of the next word
     c_for_range_down(i, 12, 1)
-      result[i - 1] = wrap_uint64(result[i - 1] + lsr(result[i], 32));
+      result[i - 1] = wrap_uint64(result[i - 1] + lsr(result[i], cst_uint64(32)));
       result[i] &= cst(LOWER_32_BITS);
     c_end
   c_end
@@ -577,7 +578,7 @@ dnl  limitations under the License.
   # @param mantissa a buffer containing the mantissa to be corrected
   # @return a corrective (addition) that is needed to adjust the decimal exponent of the number
   def_array_fn(array_size(N), ret_int32, correctPossibleUnderflow, uint64_array_decl(mantissa, N))
-    int32_decl(expCorr) = 0;
+    let(int32_decl(expCorr)) = 0;
     c_while(fn(isLessThanOne)(mantissa)) # Underflow
       fn(multBuffBy10)(mantissa);
       expCorr -= 1;
@@ -621,24 +622,24 @@ dnl  limitations under the License.
   # @param product a buffer of at least 12 longs to hold the product
   def_fn(ret_void, multUnpacked6x32byPacked, uint64_array_decl(factor1, 6), uint64_array_decl(factor2, 4), uint64_array_decl(product, 12))
     c_for_range(i, 0, array_len(product))
-      product[i] = 0;
+      product[i] = cst_uint64(0);
     c_end
-    uint64_array_decl(unpacked2, 6) = field(buffer6x32B);
+    let(uint64_array_decl(unpacked2, 6)) = field(buffer6x32B);
     fn(unpack_3x64_to_6x32)(factor2, unpacked2); # It's the powerOf2, with exponent in 0'th word
 
-    int32_decl(maxFactIdx) = array_len(factor1);
+    let(int32_decl(maxFactIdx)) = array_len(factor1);
 
     c_for_range_down(i, maxFactIdx, 0) # compute partial 32-bit products
       c_for_range_down(j, maxFactIdx, 0)
-        uint64_decl(part) = factor1[i] * unpacked2[j];
+        let(uint64_decl(part)) = factor1[i] * unpacked2[j];
         product[j + i + 1] = wrap_uint64(product[j + i + 1] + (part & cst(LOWER_32_BITS)));
-        product[j + i] = wrap_uint64(product[j + i] + lsr(part, 32));
+        product[j + i] = wrap_uint64(product[j + i] + lsr(part, cst_uint64(32)));
       c_end
     c_end
 
     # Carry higher bits of the product to the lower bits of the next word
     c_for_range_down(i, 12, 1)
-      product[i - 1] = wrap_uint64(product[i - 1] + lsr(product[i], 32));
+      product[i - 1] = wrap_uint64(product[i - 1] + lsr(product[i], cst_uint64(32)));
       product[i] &= cst(LOWER_32_BITS);
     c_end
   c_end
@@ -646,11 +647,11 @@ dnl  limitations under the License.
   # Multiplies the unpacked value stored in the given buffer by 10
   # @param buffer contains the unpacked value to multiply (32 least significant bits are used)
   def_array_fn(array_size(N), ret_void, multBuffBy10, uint64_array_decl(buffer, N))
-    int32_decl(maxIdx) = array_len(buffer) - 1;
+    let(int32_decl(maxIdx)) = array_len(buffer) - 1;
     buffer[0] &= cst(LOWER_32_BITS);
-    buffer[maxIdx] *= 10;
+    buffer[maxIdx] *= cst_uint64(10);
     c_for_range_down(i, maxIdx, 0)
-      buffer[i] = wrap_uint64(buffer[i] * 10 + lsr(buffer[i + 1], 32));
+      buffer[i] = wrap_uint64(buffer[i] * cst_uint64(10) + lsr(buffer[i + 1], cst_uint64(32)));
       buffer[i + 1] &= cst(LOWER_32_BITS);
     c_end
   c_end
@@ -663,7 +664,7 @@ dnl  limitations under the License.
   # @param mantissa a buffer containing unpacked mantissa
   # @return if the mantissa was not normal initially, a correction that should be added to the result's exponent, or 0 otherwise
   def_array_fn(array_size(N), ret_int32, normalizeMant, uint64_array_decl(mantissa, N))
-    int32_decl(expCorr) = 31 - f_number_of_leading_zeros(mantissa[0]);
+    let(int32_decl(expCorr)) = 31 - f_number_of_leading_zeros(mantissa[0]);
     c_if(expCorr != 0)
       fn(divBuffByPower2)(mantissa, expCorr);
     c_end
@@ -692,9 +693,9 @@ dnl  limitations under the License.
     # 0x0000_0000_0000_0000L 0x0000_0000_0000_0000L 0x8000_0000_0000_0000L, to provide carry to
     # higher bits.
 
-    fn(addToBuff)(mantissa, 5, 100); # to compensate possible inaccuracy
+    fn(addToBuff)(mantissa, 5, cst_uint64(100)); # to compensate possible inaccuracy
     fn(addToBuff)(mantissa, 4, cst_uint64(0x8000_0000)); # round-up, if bits 128..159 >= 0x8000_0000L
-    c_if((mantissa[0] & (cst(HIGHER_32_BITS) << 1)) != 0)
+    c_if((mantissa[0] & (cst(HIGHER_32_BITS) << cst_uint64(1))) != cst_uint64(0))
       # carry's got propagated beyond the highest bit
       fn(divBuffByPower2)(mantissa, 1);
       return 1;
@@ -710,9 +711,9 @@ dnl  limitations under the License.
   # @return packedQD192 with words 1..3 filled with the packed mantissa. packedQD192[0] is not
   #     affected.
   def_array_fn(array_size(N, P), ret_void, pack_6x32_to_3x64, uint64_array_decl(unpackedMant, N), uint64_array_decl(result, P))
-    result[1] = (unpackedMant[0] << 32) + unpackedMant[1];
-    result[2] = (unpackedMant[2] << 32) + unpackedMant[3];
-    result[3] = (unpackedMant[4] << 32) + unpackedMant[5];
+    result[1] = (unpackedMant[0] << cst_uint64(32)) + unpackedMant[1];
+    result[2] = (unpackedMant[2] << cst_uint64(32)) + unpackedMant[3];
+    result[3] = (unpackedMant[4] << cst_uint64(32)) + unpackedMant[5];
   c_end
 
   # Unpacks the mantissa of a 192-bit quasidecimal (4 longs: exp10, mantHi, mantMid, mantLo) to a
@@ -721,11 +722,11 @@ dnl  limitations under the License.
   # @param qd192 array of 4 longs containing the number to unpack
   # @param buff_6x32 buffer of 6 long to hold the unpacked mantissa
   def_fn(ret_void, unpack_3x64_to_6x32, uint64_array_decl(qd192, 4), uint64_array_decl(buff_6x32, 6))
-    buff_6x32[0] = lsr(qd192[1], 32);
+    buff_6x32[0] = lsr(qd192[1], cst_uint64(32));
     buff_6x32[1] = qd192[1] & cst(LOWER_32_BITS);
-    buff_6x32[2] = lsr(qd192[2], 32);
+    buff_6x32[2] = lsr(qd192[2], cst_uint64(32));
     buff_6x32[3] = qd192[2] & cst(LOWER_32_BITS);
-    buff_6x32[4] = lsr(qd192[3], 32);
+    buff_6x32[4] = lsr(qd192[3], cst_uint64(32));
     buff_6x32[5] = qd192[3] & cst(LOWER_32_BITS);
   c_end
 
@@ -736,21 +737,22 @@ dnl  limitations under the License.
   # @param buffer the buffer to divide
   # @param exp2 the exponent of the power of two to divide by, expected to be
   def_array_fn(array_size(N), ret_void, divBuffByPower2, uint64_array_decl(buffer, N), int32_decl(exp2))
-    int32_decl(maxIdx) = array_len(buffer) - 1;
-    int32_decl(backShift) = 32 - f_iabs(exp2);
+    let(int32_decl(maxIdx)) = array_len(buffer) - 1;
+    let(uint64_decl(backShift)) = to_uint64(32 - f_iabs(exp2));
 
     c_if(exp2 > 0) # Shift to the right
+      let(uint64_decl(exp2Shift)) = to_uint64(exp2);
       c_for_range_down(i, maxIdx + 1, 1)
-        buffer[i] = lsr(buffer[i], exp2) | ((buffer[i - 1] << backShift) & cst(LOWER_32_BITS));
+        buffer[i] = lsr(buffer[i], exp2Shift) | ((buffer[i - 1] << backShift) & cst(LOWER_32_BITS));
       c_end
-      buffer[0] = lsr(buffer[0], exp2); # Preserve the high half of buff[0]
+      buffer[0] = lsr(buffer[0], exp2Shift); # Preserve the high half of buff[0]
     c_elsif(exp2 < 0) # Shift to the left
-      exp2 = -exp2;
-      buffer[0] = wrap_uint64((buffer[0] << exp2) | lsr(buffer[1], backShift)); # Preserve the high half of buff[0]
+      let(uint64_decl(exp2Shift)) = to_uint64(-exp2);
+      buffer[0] = wrap_uint64((buffer[0] << exp2Shift) | lsr(buffer[1], backShift)); # Preserve the high half of buff[0]
       c_for_range(i, 1, maxIdx)
-        buffer[i] = wrap_uint64(((buffer[i] << exp2) & cst(LOWER_32_BITS)) | lsr(buffer[i + 1], backShift));
+        buffer[i] = wrap_uint64(((buffer[i] << exp2Shift) & cst(LOWER_32_BITS)) | lsr(buffer[i + 1], backShift));
       c_end
-      buffer[maxIdx] = (buffer[maxIdx] << exp2) & cst(LOWER_32_BITS);
+      buffer[maxIdx] = (buffer[maxIdx] << exp2Shift) & cst(LOWER_32_BITS);
     c_end
   c_end
 
@@ -760,12 +762,12 @@ dnl  limitations under the License.
   # @param idx  the index of the element to which the summand is to be added
   # @param summand the summand to add to the idx'th element of the buffer
   def_array_fn(array_size(N), ret_void, addToBuff, uint64_array_decl(buff, N), int32_decl(idx), uint64_decl(summand))
-    int32_decl(maxIdx) = idx;
+    let(int32_decl(maxIdx)) = idx;
     buff[maxIdx] = wrap_uint64(buff[maxIdx] + summand); # Big-endian, the lowest word
     c_for_range_down(i, maxIdx + 1, 1)              # from the lowest word upwards, except the highest
-      c_if((buff[i] & cst(HIGHER_32_BITS)) != 0)
+      c_if((buff[i] & cst(HIGHER_32_BITS)) != cst_uint64(0))
         buff[i] &= cst(LOWER_32_BITS);
-        buff[i-1]+= 1;
+        buff[i-1] += cst_uint64(1);
       c_else
         break;
       c_end

@@ -41,7 +41,7 @@ namespace cloud_datastore {
   static constexpr uint64_t HIGH_BIT = 0x8000000000000000L;
 
   // Just for convenience: 0x8000_0000L, 2^31
-  static constexpr uint64_t POW_2_31_L = 0x80000000L;
+  static constexpr double POW_2_31 = 2147483648.0;
 
   // Just for convenience: 0x0000_0000_FFFF_FFFFL
   static constexpr uint64_t LOWER_32_BITS = 0x00000000FFFFFFFFL;
@@ -270,14 +270,14 @@ namespace cloud_datastore {
     
     
 
-  void QuadrupleBuilder::parse(std::vector<uint8_t>& digits,int64_t exp10) {
+  void QuadrupleBuilder::parse(std::vector<uint8_t>& digits,int32_t exp10) {
     exp10 += static_cast<int32_t>((digits).size()) - 1; // digits is viewed as x.yyy below.
     this->exponent = 0;
-    this->mantHi = 0;
-    this->mantLo = 0;
+    this->mantHi = 0LL;
+    this->mantLo = 0LL;
 
     // Finds numeric value of the decimal mantissa
-    std::array<uint64_t, 6>& mantissa = this->buffer6x32C;
+    std::array<uint64_t = this->buffer6x32C;
     int32_t exp10Corr = parseMantissa(digits, mantissa);
 
     if (exp10Corr == 0 && isEmpty(mantissa)) {
@@ -297,14 +297,14 @@ namespace cloud_datastore {
       return;
     }
 
-    int64_t exp2 = findBinaryExponent(exp10, mantissa);
+    double exp2 = findBinaryExponent(exp10, mantissa);
     // Finds binary mantissa and possible exponent correction. Fills the fields.
     findBinaryMantissa(exp10, exp2, mantissa);
   }
 
   int32_t QuadrupleBuilder::parseMantissa(std::vector<uint8_t>& digits,std::array<uint64_t,6>& mantissa) {
     for (int32_t i = (0); i < (6); i++) {
-      mantissa[i] = 0;
+      mantissa[i] = 0LL;
     }
 
     // Skip leading zeroes
@@ -333,7 +333,7 @@ namespace cloud_datastore {
     }
 
     for (int32_t i = (static_cast<int32_t>((digits).size())) - 1; i >= (firstDigit); i--) { // digits, starting from the last
-      mantissa[0] |= (static_cast<uint64_t>(digits[i])) << 32;
+      mantissa[0] |= (static_cast<uint64_t>(digits[i])) << 32LL;
       divBuffBy10(mantissa);
     }
     return expCorr;
@@ -345,10 +345,10 @@ namespace cloud_datastore {
     int32_t maxIdx = static_cast<int32_t>((buffer).size());
     // big/endian
     for (int32_t i = (0); i < (maxIdx); i++) {
-      uint64_t r = buffer[i] % 10;
-      buffer[i] = ((buffer[i]) / (10));
+      uint64_t r = buffer[i] % 10LL;
+      buffer[i] = ((buffer[i]) / (10LL));
       if (i + 1 < maxIdx) {
-        buffer[i + 1] += r << 32;
+        buffer[i + 1] += r << 32LL;
       }
     }
   }
@@ -358,7 +358,7 @@ namespace cloud_datastore {
   // @return {@code true} if the buffer is empty, {@code false} otherwise
   template<std::size_t N> bool QuadrupleBuilder::isEmpty(std::array<uint64_t,N>& buffer) {
     for (int32_t i = (0); i < (static_cast<int32_t>((buffer).size())); i++) {
-      if (buffer[i] != 0) {
+      if (buffer[i] != 0LL) {
         return false;
       }
     }
@@ -388,12 +388,12 @@ namespace cloud_datastore {
   // @param exp10 decimal exponent
   // @param mantissa array of longs containing decimal mantissa (divided by 10)
   // @return found value of binary exponent
-  int64_t QuadrupleBuilder::findBinaryExponent(int64_t exp10,std::array<uint64_t,6>& mantissa) {
-    uint64_t mant10 = mantissa[0] << 31 | ((mantissa[1]) >> (1)); // Higher 63 bits of the mantissa, in range
+  double QuadrupleBuilder::findBinaryExponent(int32_t exp10,std::array<uint64_t,6>& mantissa) {
+    uint64_t mant10 = mantissa[0] << 31LL | ((mantissa[1]) >> (1LL)); // Higher 63 bits of the mantissa, in range
     // 0x0CC..CCC -- 0x7FF..FFF (2^63/10 -- 2^63-1)
     // decimal value of the mantissa in range 1.0..9.9999...
-    double mant10d = mant10 / TWO_POW_63_DIV_10;
-    return ((uint64_t) floor(exp10 * LOG2_10 + log2(mant10d))); // Binary exponent
+    double mant10d = (static_cast<double>(mant10)) / TWO_POW_63_DIV_10;
+    return floor((static_cast<double>(exp10)) * LOG2_10 + log2(mant10d)); // Binary exponent
   }
 
   // Calculates log<sub>2</sub> of the given x
@@ -404,11 +404,11 @@ namespace cloud_datastore {
     return LOG2_E * log(x);
   }
 
-  void QuadrupleBuilder::findBinaryMantissa(int64_t exp10,int64_t exp2,std::array<uint64_t,6>& mantissa) {
+  void QuadrupleBuilder::findBinaryMantissa(int32_t exp10,double exp2,std::array<uint64_t,6>& mantissa) {
      // pow(2, -exp2): division by 2^exp2 is multiplication by 2^(-exp2) actually
-    std::array<uint64_t, 4>& powerOf2 = this->buffer4x64B;
+    std::array<uint64_t = this->buffer4x64B;
     powerOfTwo(-exp2, powerOf2);
-    std::array<uint64_t, 12>& product = this->buffer12x32; // use it for the product (M * 10^E / 2^e)
+    std::array<uint64_t = this->buffer12x32; // use it for the product (M * 10^E / 2^e)
     multUnpacked6x32byPacked(mantissa, powerOf2, product); // product in buff_12x32
     multBuffBy10(product); // "Quasidecimals" are numbers divided by 10
 
@@ -429,12 +429,13 @@ namespace cloud_datastore {
       return;
     }
     exp2 += roundUp(product); // round up, may require exponent correction
+
     if ((static_cast<uint64_t>(exp2)) >= EXPONENT_OF_INFINITY) {
       this->exponent = (static_cast<uint32_t>(EXPONENT_OF_INFINITY));
     } else {
       this->exponent = (static_cast<uint32_t>(exp2));
-      this->mantHi = (static_cast<uint64_t>((product[0] << 32) + product[1]));
-      this->mantLo = (static_cast<uint64_t>((product[2] << 32) + product[3]));
+      this->mantHi = (static_cast<uint64_t>((product[0] << 32LL) + product[1]));
+      this->mantLo = (static_cast<uint64_t>((product[2] << 32LL) + product[3]));
     }
   }
 
@@ -445,21 +446,21 @@ namespace cloud_datastore {
   // uses arrays <b><i>buffer4x64B</b>, buffer6x32A, buffer6x32B, buffer12x32</i></b>,
   // @param exp the power to raise 2 to
   // @param power (result) the value of {@code2^exp}
-  void QuadrupleBuilder::powerOfTwo(int64_t exp,std::array<uint64_t,4>& power) {
+  void QuadrupleBuilder::powerOfTwo(double exp,std::array<uint64_t,4>& power) {
     if (exp == 0) {
       array_copy(POS_POWERS_OF_2[0], power);
       return;
     }
 
     // positive powers of 2 (2^0, 2^1, 2^2, 2^4, 2^8 ... 2^(2^31) )
-    std::array<std::array<uint64_t, 4>, 33>* powers = (&(POS_POWERS_OF_2));
+    std::array<std::array<uint64_t = (&(POS_POWERS_OF_2));
     if (exp < 0) {
       exp = -exp;
       powers = (&(NEG_POWERS_OF_2)); // positive powers of 2 (2^0, 2^-1, 2^-2, 2^-4, 2^-8 ... 2^30)
     }
 
     // 2^31 = 0x8000_0000L; a single bit that will be shifted right at every iteration
-    int64_t currPowOf2 = POW_2_31_L;
+    double currPowOf2 = POW_2_31;
     int32_t idx = 32; // Index in the table of powers
     bool first_power = true;
 
@@ -478,7 +479,7 @@ namespace cloud_datastore {
         exp -= currPowOf2;
       }
       idx -= 1;
-      currPowOf2 = ((currPowOf2) >> (1));
+      currPowOf2 = currPowOf2 * 0.5; // Note: this is exact
     }
   }
 
@@ -513,7 +514,7 @@ namespace cloud_datastore {
   // @param result an array of 12 longs filled with the product of mantissas
   void QuadrupleBuilder::multPacked3x64_simply(std::array<uint64_t,4>& factor1,std::array<uint64_t,4>& factor2,std::array<uint64_t,12>& result) {
     for (int32_t i = (0); i < (static_cast<int32_t>((result).size())); i++) {
-      result[i] = 0;
+      result[i] = 0LL;
     }
     // TODO2 19.01.16 21:23:06 for the next version -- rebuild the table of powers to make the
     // numbers unpacked, to avoid packing/unpacking
@@ -524,13 +525,13 @@ namespace cloud_datastore {
       for (int32_t j = (6) - 1; j >= (0); j--) {
         uint64_t part = this->buffer6x32A[i] * this->buffer6x32B[j];
         result[j + i + 1] = (static_cast<uint64_t>(result[j + i + 1] + (part & LOWER_32_BITS)));
-        result[j + i] = (static_cast<uint64_t>(result[j + i] + ((part) >> (32))));
+        result[j + i] = (static_cast<uint64_t>(result[j + i] + ((part) >> (32LL))));
       }
     }
 
     // Carry higher bits of the product to the lower bits of the next word
     for (int32_t i = (12) - 1; i >= (1); i--) {
-      result[i - 1] = (static_cast<uint64_t>(result[i - 1] + ((result[i]) >> (32))));
+      result[i - 1] = (static_cast<uint64_t>(result[i - 1] + ((result[i]) >> (32LL))));
       result[i] &= LOWER_32_BITS;
     }
   }
@@ -585,9 +586,9 @@ namespace cloud_datastore {
   // @param product a buffer of at least 12 longs to hold the product
   void QuadrupleBuilder::multUnpacked6x32byPacked(std::array<uint64_t,6>& factor1,std::array<uint64_t,4>& factor2,std::array<uint64_t,12>& product) {
     for (int32_t i = (0); i < (static_cast<int32_t>((product).size())); i++) {
-      product[i] = 0;
+      product[i] = 0LL;
     }
-    std::array<uint64_t, 6>& unpacked2 = this->buffer6x32B;
+    std::array<uint64_t = this->buffer6x32B;
     unpack_3x64_to_6x32(factor2, unpacked2); // It's the powerOf2, with exponent in 0'th word
 
     int32_t maxFactIdx = static_cast<int32_t>((factor1).size());
@@ -596,13 +597,13 @@ namespace cloud_datastore {
       for (int32_t j = (maxFactIdx) - 1; j >= (0); j--) {
         uint64_t part = factor1[i] * unpacked2[j];
         product[j + i + 1] = (static_cast<uint64_t>(product[j + i + 1] + (part & LOWER_32_BITS)));
-        product[j + i] = (static_cast<uint64_t>(product[j + i] + ((part) >> (32))));
+        product[j + i] = (static_cast<uint64_t>(product[j + i] + ((part) >> (32LL))));
       }
     }
 
     // Carry higher bits of the product to the lower bits of the next word
     for (int32_t i = (12) - 1; i >= (1); i--) {
-      product[i - 1] = (static_cast<uint64_t>(product[i - 1] + ((product[i]) >> (32))));
+      product[i - 1] = (static_cast<uint64_t>(product[i - 1] + ((product[i]) >> (32LL))));
       product[i] &= LOWER_32_BITS;
     }
   }
@@ -612,9 +613,9 @@ namespace cloud_datastore {
   template<std::size_t N> void QuadrupleBuilder::multBuffBy10(std::array<uint64_t,N>& buffer) {
     int32_t maxIdx = static_cast<int32_t>((buffer).size()) - 1;
     buffer[0] &= LOWER_32_BITS;
-    buffer[maxIdx] *= 10;
+    buffer[maxIdx] *= 10LL;
     for (int32_t i = (maxIdx) - 1; i >= (0); i--) {
-      buffer[i] = (static_cast<uint64_t>(buffer[i] * 10 + ((buffer[i + 1]) >> (32))));
+      buffer[i] = (static_cast<uint64_t>(buffer[i] * 10LL + ((buffer[i + 1]) >> (32LL))));
       buffer[i + 1] &= LOWER_32_BITS;
     }
   }
@@ -656,9 +657,9 @@ namespace cloud_datastore {
     // 0x0000_0000_0000_0000L 0x0000_0000_0000_0000L 0x8000_0000_0000_0000L, to provide carry to
     // higher bits.
 
-    addToBuff(mantissa, 5, 100); // to compensate possible inaccuracy
+    addToBuff(mantissa, 5, 100LL); // to compensate possible inaccuracy
     addToBuff(mantissa, 4, 0x80000000LL); // round-up, if bits 128..159 >= 0x8000_0000L
-    if ((mantissa[0] & (HIGHER_32_BITS << 1)) != 0) {
+    if ((mantissa[0] & (HIGHER_32_BITS << 1LL)) != 0LL) {
       // carry's got propagated beyond the highest bit
       divBuffByPower2(mantissa, 1);
       return 1;
@@ -674,9 +675,9 @@ namespace cloud_datastore {
   // @return packedQD192 with words 1..3 filled with the packed mantissa. packedQD192[0] is not
   //     affected.
   template<std::size_t N, std::size_t P> void QuadrupleBuilder::pack_6x32_to_3x64(std::array<uint64_t,N>& unpackedMant,std::array<uint64_t,P>& result) {
-    result[1] = (unpackedMant[0] << 32) + unpackedMant[1];
-    result[2] = (unpackedMant[2] << 32) + unpackedMant[3];
-    result[3] = (unpackedMant[4] << 32) + unpackedMant[5];
+    result[1] = (unpackedMant[0] << 32LL) + unpackedMant[1];
+    result[2] = (unpackedMant[2] << 32LL) + unpackedMant[3];
+    result[3] = (unpackedMant[4] << 32LL) + unpackedMant[5];
   }
 
   // Unpacks the mantissa of a 192-bit quasidecimal (4 longs: exp10, mantHi, mantMid, mantLo) to a
@@ -685,11 +686,11 @@ namespace cloud_datastore {
   // @param qd192 array of 4 longs containing the number to unpack
   // @param buff_6x32 buffer of 6 long to hold the unpacked mantissa
   void QuadrupleBuilder::unpack_3x64_to_6x32(std::array<uint64_t,4>& qd192,std::array<uint64_t,6>& buff_6x32) {
-    buff_6x32[0] = ((qd192[1]) >> (32));
+    buff_6x32[0] = ((qd192[1]) >> (32LL));
     buff_6x32[1] = qd192[1] & LOWER_32_BITS;
-    buff_6x32[2] = ((qd192[2]) >> (32));
+    buff_6x32[2] = ((qd192[2]) >> (32LL));
     buff_6x32[3] = qd192[2] & LOWER_32_BITS;
-    buff_6x32[4] = ((qd192[3]) >> (32));
+    buff_6x32[4] = ((qd192[3]) >> (32LL));
     buff_6x32[5] = qd192[3] & LOWER_32_BITS;
   }
 
@@ -701,20 +702,21 @@ namespace cloud_datastore {
   // @param exp2 the exponent of the power of two to divide by, expected to be
   template<std::size_t N> void QuadrupleBuilder::divBuffByPower2(std::array<uint64_t,N>& buffer,int32_t exp2) {
     int32_t maxIdx = static_cast<int32_t>((buffer).size()) - 1;
-    int32_t backShift = 32 - static_cast<int32_t>(labs(exp2));
+    uint64_t backShift = (static_cast<uint64_t>(32 - static_cast<int32_t>(labs(exp2))));
 
     if (exp2 > 0) { // Shift to the right
+      uint64_t exp2Shift = (static_cast<uint64_t>(exp2));
       for (int32_t i = (maxIdx + 1) - 1; i >= (1); i--) {
-        buffer[i] = ((buffer[i]) >> (exp2)) | ((buffer[i - 1] << backShift) & LOWER_32_BITS);
+        buffer[i] = ((buffer[i]) >> (exp2Shift)) | ((buffer[i - 1] << backShift) & LOWER_32_BITS);
       }
-      buffer[0] = ((buffer[0]) >> (exp2)); // Preserve the high half of buff[0]
+      buffer[0] = ((buffer[0]) >> (exp2Shift)); // Preserve the high half of buff[0]
     } else if (exp2 < 0) { // Shift to the left
-      exp2 = -exp2;
-      buffer[0] = (static_cast<uint64_t>((buffer[0] << exp2) | ((buffer[1]) >> (backShift)))); // Preserve the high half of buff[0]
+      uint64_t exp2Shift = (static_cast<uint64_t>(-exp2));
+      buffer[0] = (static_cast<uint64_t>((buffer[0] << exp2Shift) | ((buffer[1]) >> (backShift)))); // Preserve the high half of buff[0]
       for (int32_t i = (1); i < (maxIdx); i++) {
-        buffer[i] = (static_cast<uint64_t>(((buffer[i] << exp2) & LOWER_32_BITS) | ((buffer[i + 1]) >> (backShift))));
+        buffer[i] = (static_cast<uint64_t>(((buffer[i] << exp2Shift) & LOWER_32_BITS) | ((buffer[i + 1]) >> (backShift))));
       }
-      buffer[maxIdx] = (buffer[maxIdx] << exp2) & LOWER_32_BITS;
+      buffer[maxIdx] = (buffer[maxIdx] << exp2Shift) & LOWER_32_BITS;
     }
   }
 
@@ -727,9 +729,9 @@ namespace cloud_datastore {
     int32_t maxIdx = idx;
     buff[maxIdx] = (static_cast<uint64_t>(buff[maxIdx] + summand)); // Big-endian, the lowest word
     for (int32_t i = (maxIdx + 1) - 1; i >= (1); i--) {              // from the lowest word upwards, except the highest
-      if ((buff[i] & HIGHER_32_BITS) != 0) {
+      if ((buff[i] & HIGHER_32_BITS) != 0LL) {
         buff[i] &= LOWER_32_BITS;
-        buff[i-1]+= 1;
+        buff[i-1] += 1LL;
       } else {
         break;
       }

@@ -24,13 +24,18 @@ CPP_HEADER=$(QUADRUPLE)/cpp/quadruple-converter/quadruple_builder.h
 
 PYTHON_TARGET=$(QUADRUPLE)/python/quadruple_builder.py
 
-all: $(JAVA_TARGET) $(PYTHON_TARGET) $(CPP_TARGET) $(CPP_HEADER)
+TYPESCRIPT_TARGET=$(QUADRUPLE)/typescript/quadruple_builder.ts
+
+all: $(JAVA_TARGET) $(PYTHON_TARGET) $(TYPESCRIPT_TARGET) $(CPP_TARGET) $(CPP_HEADER)
 
 $(JAVA_TARGET): $(LICENSE) java/start.m4 $(QUADRUPLE_BUILDER) java/end.m4
 	m4 $^ | sed -e 's/#/\/\//' > "$@"
 
 $(PYTHON_TARGET): $(LICENSE) python/start.m4 $(QUADRUPLE_BUILDER)
 	m4 $^ > "$@"
+
+$(TYPESCRIPT_TARGET): $(LICENSE) typescript/start.m4 $(QUADRUPLE_BUILDER) typescript/end.m4
+	m4 $^  | sed -e 's/#/\/\//' > "$@"
 
 $(CPP_TARGET):  $(LICENSE) cpp/start.m4 $(QUADRUPLE_BUILDER) cpp/end.m4
 	m4 $^ | sed -e 's/#/\/\//' -e 's/\$$/#/' > "$@"

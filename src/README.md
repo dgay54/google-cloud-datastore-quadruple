@@ -80,7 +80,7 @@ types. No wrapping is assumed, the only requirement is that the low-order
 32/64-bits of the result match those of the result type (signed or
 unsigned). Explicit wrapping is used where overflow is possible.
 
-The type conversions (`to_digit`, `to_exponent`, `to_uint64`) are not required
+The type conversions (`to_digit`, `to_exponent`, `to_uint64`, `to_double`) are not required
 to clamp numbers to the target type's range.
 
 ## Control Structures
@@ -138,7 +138,6 @@ The following fields are assumed to exist: `exponent`, `mantHi`, `mantLo`.
 - `bool_decl(name)` - declare a boolean
 - `digit_decl(name)` - declare a decimal digit
 - `int32_decl(name)` - declare a signed 32-bit integer
-- `int64_decl(name)` - declare a signed 64-bit integer
 - `uint64_decl(name)` - declare an unsigned 64-bit integer
 - `double_decl(name)` - declare an IEEE 64-bit floating point number
 - `uint64_array_decl(name, size)` - declare a reference to an array of `size` unsigned 64-bit
@@ -164,7 +163,6 @@ Local variable declarations must be followed by an initializer (`= expression`)
 - `ret_void` - a function with no result
 - `ret_bool` - a function that returns a boolean
 - `ret_int32` - a function that returns a signed 32-bit integer
-- `ret_int64` - a function that returns a signed 64-bit integer
 - `ret_double` - a function that returns an IEEE 64-bit floating point number
 
 ### Control Structures
@@ -201,11 +199,12 @@ Decimal and hexadecimal constants are allowed - hexadecimal constants use the 0x
 - `array_len(e)` - returns length of array `e`
 - `to_digit(e)` - converts e to a decimal digit - no value clamping required
 - `to_exponent(e)` - converts e (unsigned in the range 0 to 2^32-1) to a value storeable in `field(exponent)` - no value clamping required
+- `to_double(e)` - converts e to an IEEE 64-bit floating point value - no value clamping required
 - `to_uint64(e)` - converts e to an unsigned 64-bit integer - no value clamping required
 - `wrap_uint64(e)` - wraps e to the unsigned 64-bit integer range
 - `lsr(e, N)` - shifts unsigned 64-bit integer left by N bits
 - `int_divide(e1, e2)` - integer divide (round towards 0) of 64-bit unsigned integers
 - `f_number_of_leading_zeros(e)` - number of leading zeros of 64-bit unsigned integer e - can assume e is non-zero
 - `f_log(e)` - IEEE 64-bit floating point natural logarithm
-- `f_floor(e)` - IEEE 64-bit floating point round down to the closest signed 64-bit integer
+- `f_floor(e)` - IEEE 64-bit floating point round down to the closest integer
 - `f_iabs(e)` - 32-bit signed integer absolute value

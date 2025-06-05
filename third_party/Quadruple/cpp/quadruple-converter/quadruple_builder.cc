@@ -277,7 +277,7 @@ namespace cloud_datastore {
     this->mantLo = 0LL;
 
     // Finds numeric value of the decimal mantissa
-    std::array<uint64_t = this->buffer6x32C;
+    std::array<uint64_t,6>& mantissa = this->buffer6x32C;
     int32_t exp10Corr = parseMantissa(digits, mantissa);
 
     if (exp10Corr == 0 && isEmpty(mantissa)) {
@@ -406,9 +406,9 @@ namespace cloud_datastore {
 
   void QuadrupleBuilder::findBinaryMantissa(int32_t exp10,double exp2,std::array<uint64_t,6>& mantissa) {
      // pow(2, -exp2): division by 2^exp2 is multiplication by 2^(-exp2) actually
-    std::array<uint64_t = this->buffer4x64B;
+    std::array<uint64_t,4>& powerOf2 = this->buffer4x64B;
     powerOfTwo(-exp2, powerOf2);
-    std::array<uint64_t = this->buffer12x32; // use it for the product (M * 10^E / 2^e)
+    std::array<uint64_t,12>& product = this->buffer12x32; // use it for the product (M * 10^E / 2^e)
     multUnpacked6x32byPacked(mantissa, powerOf2, product); // product in buff_12x32
     multBuffBy10(product); // "Quasidecimals" are numbers divided by 10
 
@@ -453,7 +453,7 @@ namespace cloud_datastore {
     }
 
     // positive powers of 2 (2^0, 2^1, 2^2, 2^4, 2^8 ... 2^(2^31) )
-    std::array<std::array<uint64_t = (&(POS_POWERS_OF_2));
+    std::array<std::array<uint64_t,4>,33>* powers = (&(POS_POWERS_OF_2));
     if (exp < 0) {
       exp = -exp;
       powers = (&(NEG_POWERS_OF_2)); // positive powers of 2 (2^0, 2^-1, 2^-2, 2^-4, 2^-8 ... 2^30)
@@ -588,7 +588,7 @@ namespace cloud_datastore {
     for (int32_t i = (0); i < (static_cast<int32_t>((product).size())); i++) {
       product[i] = 0LL;
     }
-    std::array<uint64_t = this->buffer6x32B;
+    std::array<uint64_t,6>& unpacked2 = this->buffer6x32B;
     unpack_3x64_to_6x32(factor2, unpacked2); // It's the powerOf2, with exponent in 0'th word
 
     int32_t maxFactIdx = static_cast<int32_t>((factor1).size());

@@ -60,9 +60,15 @@ public class QuadrupleTest {
         Quadruple.fromLong(-1),
         Quadruple.fromDouble(-1),
         Quadruple.fromString("-1"));
-    add(orderedEquivalences, Quadruple.fromDouble(-0.0), Quadruple.NEGATIVE_ZERO);
     add(
         orderedEquivalences,
+        Quadruple.fromString("-0"),
+        Quadruple.fromDouble(-0.0),
+        Quadruple.NEGATIVE_ZERO);
+    add(
+        orderedEquivalences,
+        Quadruple.fromString("0"),
+        Quadruple.fromString("+0"),
         Quadruple.fromDouble(0.0),
         Quadruple.fromLong(0),
         Quadruple.POSITIVE_ZERO);
@@ -98,13 +104,16 @@ public class QuadrupleTest {
             if (classIndex1 == classIndex2) {
               assertEquals(q1, q2, testCase);
               assertTrue(q1.compareTo(q2) == 0, testCase);
+              assertTrue(q2.compareTo(q1) == 0, testCase);
               assertEquals(q1.hashCode(), q2.hashCode(), testCase);
             } else if (classIndex1 < classIndex2) {
               assertNotEquals(q1, q2, testCase);
               assertTrue(q1.compareTo(q2) < 0, testCase);
+              assertTrue(q2.compareTo(q1) > 0, testCase);
             } else {
               assertNotEquals(q1, q2);
               assertTrue(q1.compareTo(q2) > 0, testCase);
+              assertTrue(q2.compareTo(q1) < 0, testCase);
             }
           }
         }
@@ -164,7 +173,7 @@ public class QuadrupleTest {
       // Avoid subnormal exponents, as it makes building identical double
       // and Quadruple values harder.
       int exponent = random.nextInt(1022 + 1023 + 1) - 1022;
-      boolean negative = random.nextInt(1) == 0;
+      boolean negative = random.nextInt(2) == 0;
       int biasedExponent = exponent + QUADRUPLE_BIAS;
       Quadruple q = new Quadruple(negative, biasedExponent, mantissa << 12, 0);
       double d = makeDouble(negative, exponent, mantissa);
@@ -210,8 +219,8 @@ public class QuadrupleTest {
       // Includes (double) subnormal exponents.
       int exponent1 = random.nextInt(1074 + 1023 + 1) - 1074;
       int exponent2 = random.nextInt(1074 + 1023 + 1) - 1074;
-      double d1 = makeDouble(random.nextInt(1) == 0, exponent1, mantissa1);
-      double d2 = makeDouble(random.nextInt(1) == 0, exponent2, mantissa2);
+      double d1 = makeDouble(random.nextInt(2) == 0, exponent1, mantissa1);
+      double d2 = makeDouble(random.nextInt(2) == 0, exponent2, mantissa2);
       Quadruple q1 = Quadruple.fromDouble(d1);
       Quadruple q2 = Quadruple.fromDouble(d2);
 

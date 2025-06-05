@@ -18,7 +18,7 @@ define(ret_void, `void')dnl
 define(ret_bool, `bool')dnl
 define(ret_int32, `int32_t')dnl
 define(ret_double, `double')dnl
-define(let, `$1')dnl
+define(let, `$@')dnl
 define(bool_decl, `bool $1')dnl
 define(digit_decl, `uint8_t $1')dnl
 define(digits_decl, `std::vector<uint8_t>& $1')dnl

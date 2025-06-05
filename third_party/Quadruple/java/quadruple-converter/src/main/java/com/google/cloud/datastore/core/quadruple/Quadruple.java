@@ -44,7 +44,9 @@ public final class Quadruple implements Comparable<Quadruple> {
   private final long mantHi;
   private final long mantLo;
 
-  /** Build a new quadruple from its raw representation - sign, biased exponent, 128-bit mantissa. */
+  /**
+   * Build a new quadruple from its raw representation - sign, biased exponent, 128-bit mantissa.
+   */
   public Quadruple(boolean negative, int biasedExponent, long mantHi, long mantLo) {
     this.negative = negative;
     this.biasedExponent = biasedExponent;

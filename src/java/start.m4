@@ -17,7 +17,7 @@ define(ret_void, `void')dnl
 define(ret_bool, `boolean')dnl
 define(ret_int32, `int')dnl
 define(ret_double, `double')dnl
-define(let, `$1')dnl
+define(let, `$@')dnl
 define(bool_decl, `boolean $1')dnl
 define(digit_decl, `byte $1')dnl
 define(digits_decl, `byte[] $1')dnl

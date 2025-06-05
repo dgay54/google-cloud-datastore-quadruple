@@ -27,7 +27,7 @@ define(ret_bool, {})dnl
 define(ret_int32, {})dnl
 define(ret_int64, {})dnl
 define(ret_double, {})dnl
-define(let, {$1})dnl
+define(let, {$@})dnl
 define(bool_decl, $1)dnl
 define(digit_decl, $1)dnl
 define(digits_decl, $1)dnl

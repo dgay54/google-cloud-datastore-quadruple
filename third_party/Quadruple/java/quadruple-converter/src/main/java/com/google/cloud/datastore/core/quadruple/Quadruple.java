@@ -262,7 +262,6 @@ public final class Quadruple implements Comparable<Quadruple> {
         i++;
       }
     }
-    int firstDigit = i;
     while (i < len && Character.isDigit(chars[i])) {
       digits[j++] = (byte) (chars[i++] - '0');
     }

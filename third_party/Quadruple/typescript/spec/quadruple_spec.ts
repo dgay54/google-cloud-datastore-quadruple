@@ -184,7 +184,7 @@ describe('QuadrupleTest', function () {
       let mantissa = BigInt(random(0x10_0000_0000_0000)); // 52 bits
       // Avoid subnormal exponents, as it makes building identical double
       // and Quadruple values harder.
-      let exponent = random(1022 + 1023 + 2) - 1022;
+      let exponent = random(1022 + 1023 + 1) - 1022;
       let negative = random(2) == 0;
       let biasedExponent = exponent + quadrupleBias;
       let q = new Quadruple(negative, biasedExponent, mantissa << 12n, 0n);

@@ -85,7 +85,6 @@ class Quadruple {
     out << std::setw(16) << mantissa_lo_;
     out << "*2^" << std::dec << exponent_ - static_cast<int64_t>(kExponentBias);
     out << " =~ " << static_cast<double>(*this);
-    
     return out.str();
   }
 
@@ -101,3 +100,4 @@ class Quadruple {
 }  // namespace cloud_datastore
 
 #endif  // CLOUD_DATASTORE_COMMON_QUADRUPLE_H_
+

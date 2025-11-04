@@ -12,14 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "quadruple.h"
-#include "quadruple_builder.h"
+#include "third_party/cpp/quadruple/quadruple.h"
+#include "third_party/cpp/quadruple/quadruple_builder.h"
 
 #include <ctype.h>
 #include <stdint.h>
 
 #include <cmath>
 #include <limits>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace cloud_datastore {
 
@@ -117,7 +120,7 @@ bool Quadruple::Parse(std::string s) {
   }
   bool negative = false;
   int len = s.size();
-  uint8_t* digits = new uint8_t[len];
+  std::unique_ptr<uint8_t[]> digits(new uint8_t[len]);
   int i = 0;
   int j = 0;
   int64_t exponent = 0;
@@ -246,3 +249,4 @@ int64_t Quadruple::HashValue() const {
 }
 
 }  // namespace cloud_datastore
+

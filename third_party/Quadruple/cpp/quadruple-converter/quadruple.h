@@ -35,7 +35,7 @@ class Quadruple {
  public:
   // Initialises a Quadruple to +0.0
   Quadruple() : Quadruple(0, 0, 0) {}
-  
+
   Quadruple(uint64_t exponent_and_sign, uint64_t mantissa_hi,
             uint64_t mantissa_lo)
       : negative_(exponent_and_sign >> 63),

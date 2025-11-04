@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "third_party/cpp/quadruple/quadruple.h"
-#include "third_party/cpp/quadruple/quadruple_builder.h"
+#include "quadruple.h"
+#include "quadruple_builder.h"
 
 #include <ctype.h>
 #include <stdint.h>

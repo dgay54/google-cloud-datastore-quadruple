@@ -13,7 +13,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "third_party/cpp/quadruple/quadruple_builder.h"
+#include "quadruple_builder.h"
 #include <stdlib.h>
 #include <math.h>
 

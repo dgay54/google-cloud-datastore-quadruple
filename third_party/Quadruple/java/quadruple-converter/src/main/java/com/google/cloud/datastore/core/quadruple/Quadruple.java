@@ -238,6 +238,14 @@ public final class Quadruple implements Comparable<Quadruple> {
    * </ul>
    */
   public static Quadruple fromString(String s) {
+    return fromString(s, false);
+  }
+
+  public static Quadruple fromStringNoDoubleCollisions(String s) {
+    return fromString(s, true);
+  }
+
+  private static Quadruple fromString(String s, boolean avoidDoubleCollisions) {
     if (s.equals("NaN")) {
       return NaN;
     }
@@ -302,10 +310,33 @@ public final class Quadruple implements Comparable<Quadruple> {
     byte[] digitsCopy = new byte[j];
     System.arraycopy(digits, 0, digitsCopy, 0, j);
     QuadrupleBuilder parsed = QuadrupleBuilder.parseDecimal(digitsCopy, exponent);
-    return new Quadruple(negative, parsed.exponent, parsed.mantHi, parsed.mantLo);
+
+    int quadrupleExponent = parsed.exponent;
+    long mantHi = parsed.mantHi;
+    long mantLo = parsed.mantLo;
+    if (avoidDoubleCollisions && mantLo == 0 && (mantHi & 0xfff) == 0 && parsed.rounding != 0) {
+      if (parsed.rounding > 0) {
+        mantLo = 1;
+      } else {
+        mantLo = -1;
+        if (mantHi == 0) {
+          // This is most likely unreachable, as it would require a decimal number that rounds up to
+          // an exact power of 2 when converted.
+          quadrupleExponent--;
+          mantHi = -1;
+        } else {
+          mantHi--;
+        }
+      }
+    }
+    return new Quadruple(negative, quadrupleExponent, mantHi, mantLo);
   }
 
   private static final int bias(int exponent) {
     return exponent + QuadrupleBuilder.EXPONENT_BIAS;
+  }
+
+  public String toString() {
+    return String.format("%s %016x %016x e%d", negative ? "-" : "", mantHi, mantLo, exponent());
   }
 }

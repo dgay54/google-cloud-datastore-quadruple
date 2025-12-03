@@ -274,6 +274,7 @@ class QuadrupleBuilder(object):
     self.exponent = 0
     self.mantHi = 0
     self.mantLo = 0
+    self.rounding = 0
     self.buffer4x64B = [0] * 4
     self.buffer6x32A = [0] * 6
     self.buffer6x32B = [0] * 6
@@ -285,6 +286,7 @@ class QuadrupleBuilder(object):
     self.exponent = 0;
     self.mantHi = 0;
     self.mantLo = 0;
+    self.rounding = 0;
 
     # Finds numeric value of the decimal mantissa
     mantissa = self.buffer6x32C;
@@ -310,6 +312,33 @@ class QuadrupleBuilder(object):
     exp2 = self.findBinaryExponent(exp10, mantissa);
     # Finds binary mantissa and possible exponent correction. Fills the fields.
     self.findBinaryMantissa(exp10, exp2, mantissa);
+  
+
+  # Flip the result of parse to round to the other closest 128-bit Quadruple
+  def invertRounding(self, ):
+    if self.rounding != 0:
+      if self.rounding > 0:
+        self.mantLo += 1;
+        if self.mantLo == 0:
+          self.mantHi += 1;
+          if self.mantHi == 0:
+            self.exponent += 1;
+          
+        
+      else:
+        if self.mantLo == 0:
+          self.mantLo = 0xFFFF_FFFF_FFFF_FFFF;
+          if self.mantHi == 0:
+            self.exponent -= 1;
+            self.mantHi = 0xFFFF_FFFF_FFFF_FFFF;
+          else:
+            self.mantHi -= 1;
+          
+        else:
+          self.mantLo -= 1;
+        
+      
+    
   
 
   def parseMantissa(self, digits,mantissa):
@@ -438,6 +467,9 @@ class QuadrupleBuilder(object):
     if exp2 <= 0:
       return;
     
+    # true if bits 128-191 are all 0, i.e., the conversion appears exact to 192-bit precision
+    exact192 = product[4] == 0 and product[5] == 0;
+    prev128 = product[3];
     exp2 += self.roundUp(product); # round up, may require exponent correction
 
     if (exp2) >= self.EXPONENT_OF_INFINITY:
@@ -446,6 +478,16 @@ class QuadrupleBuilder(object):
       self.exponent = (exp2);
       self.mantHi = (((product[0] << 32) + product[1]) & 0xffffffffffffffff);
       self.mantLo = (((product[2] << 32) + product[3]) & 0xffffffffffffffff);
+      # Report in rounding field the direction of the rounding that occured from 192 down to 128 bits
+      if not (exact192):
+        if product[3] == prev128:
+          # We truncated the high bits - real value is greater than the rounded value
+          self.rounding = 1;
+        else:
+          # We added 1 lsb - real value is lower than the rounded value
+          self.rounding = -1;
+        
+      
     
   
 

@@ -311,6 +311,7 @@ dnl  limitations under the License.
     field(exponent) = 0;
     field(mantHi) = cst_uint64(0);
     field(mantLo) = cst_uint64(0);
+    field(rounding) = 0;
 
     # Finds numeric value of the decimal mantissa
     let(uint64_array_decl(mantissa, 6)) = field(buffer6x32C);
@@ -336,6 +337,33 @@ dnl  limitations under the License.
     let(double_decl(exp2)) = fn(findBinaryExponent)(exp10, mantissa);
     # Finds binary mantissa and possible exponent correction. Fills the fields.
     fn(findBinaryMantissa)(exp10, exp2, mantissa);
+  c_end
+
+  # Flip the result of parse to round to the other closest 128-bit Quadruple
+  def_fn(ret_void, invertRounding)
+    c_if(field(rounding) != 0)
+      c_if(field(rounding) > 0)
+        field(mantLo) += cst_uint64(1);
+        c_if(field(mantLo) == cst_uint64(0))
+          field(mantHi) += cst_uint64(1);
+          c_if(field(mantHi) == cst_uint64(0))
+            field(exponent) += 1;
+          c_end
+        c_end
+      c_else
+        c_if(field(mantLo) == cst_uint64(0))
+          field(mantLo) = cst_uint64(0xFFFF_FFFF_FFFF_FFFF);
+          c_if(field(mantHi) == cst_uint64(0))
+            field(exponent) -= 1;
+            field(mantHi) = cst_uint64(0xFFFF_FFFF_FFFF_FFFF);
+          c_else
+            field(mantHi) -= cst_uint64(1);
+          c_end
+        c_else
+          field(mantLo) -= cst_uint64(1);
+        c_end
+      c_end
+    c_end
   c_end
 
   def_fn(ret_int32, parseMantissa, digits_decl(digits), uint64_array_decl(mantissa, 6))
@@ -464,6 +492,9 @@ dnl  limitations under the License.
     c_if(exp2 <= 0)
       return;
     c_end
+    # true if bits 128-191 are all 0, i.e., the conversion appears exact to 192-bit precision
+    let(bool_decl(exact192)) = product[4] == cst_uint64(0) c_and product[5] == cst_uint64(0);
+    let(uint64_decl(prev128)) = product[3];
     exp2 += fn(roundUp)(product); # round up, may require exponent correction
 
     c_if(to_uint64(exp2) >= cst(EXPONENT_OF_INFINITY))
@@ -472,6 +503,16 @@ dnl  limitations under the License.
       field(exponent) = to_exponent(exp2);
       field(mantHi) = wrap_uint64((product[0] << cst_uint64(32)) + product[1]);
       field(mantLo) = wrap_uint64((product[2] << cst_uint64(32)) + product[3]);
+      # Report in rounding field the direction of the rounding that occured from 192 down to 128 bits
+      c_if(c_not(exact192))
+        c_if(product[3] == prev128)
+          # We truncated the high bits - real value is greater than the rounded value
+          field(rounding) = 1;
+        c_else
+          # We added 1 lsb - real value is lower than the rounded value
+          field(rounding) = -1;
+        c_end
+      c_end
     c_end
   c_end
 

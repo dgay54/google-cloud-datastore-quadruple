@@ -31,6 +31,7 @@ export class QuadrupleBuilder {
   exponent: number = 0;
   mantHi: bigint = 0n;
   mantLo: bigint = 0n;
+  rounding: number = 0;
 
 
   // 2^192 = 6.277e57, so the 58-th digit after point may affect the result
@@ -283,6 +284,7 @@ export class QuadrupleBuilder {
     this.exponent = 0;
     this.mantHi = 0n;
     this.mantLo = 0n;
+    this.rounding = 0;
 
     // Finds numeric value of the decimal mantissa
     let mantissa: bigint[] = this.buffer6x32C;
@@ -308,6 +310,33 @@ export class QuadrupleBuilder {
     let exp2: number = this.findBinaryExponent(exp10, mantissa);
     // Finds binary mantissa and possible exponent correction. Fills the fields.
     this.findBinaryMantissa(exp10, exp2, mantissa);
+  }
+
+  // Flip the result of parse to round to the other closest 128-bit Quadruple
+  invertRounding() : void {
+    if (this.rounding != 0) {
+      if (this.rounding > 0) {
+        this.mantLo += 1n;
+        if (this.mantLo == 0n) {
+          this.mantHi += 1n;
+          if (this.mantHi == 0n) {
+            this.exponent += 1;
+          }
+        }
+      } else {
+        if (this.mantLo == 0n) {
+          this.mantLo = 0xFFFF_FFFF_FFFF_FFFFn;
+          if (this.mantHi == 0n) {
+            this.exponent -= 1;
+            this.mantHi = 0xFFFF_FFFF_FFFF_FFFFn;
+          } else {
+            this.mantHi -= 1n;
+          }
+        } else {
+          this.mantLo -= 1n;
+        }
+      }
+    }
   }
 
   parseMantissa(digits: number[],mantissa: bigint[]) : number {
@@ -436,6 +465,9 @@ export class QuadrupleBuilder {
     if (exp2 <= 0) {
       return;
     }
+    // true if bits 128-191 are all 0, i.e., the conversion appears exact to 192-bit precision
+    let exact192: boolean = product[4] == 0n && product[5] == 0n;
+    let prev128: bigint = product[3];
     exp2 += this.roundUp(product); // round up, may require exponent correction
 
     if (BigInt(exp2) >= QuadrupleBuilder.EXPONENT_OF_INFINITY) {
@@ -444,6 +476,16 @@ export class QuadrupleBuilder {
       this.exponent = Number(exp2);
       this.mantHi = (((product[0] << 32n) + product[1]) & 0xffffffffffffffffn);
       this.mantLo = (((product[2] << 32n) + product[3]) & 0xffffffffffffffffn);
+      // Report in rounding field the direction of the rounding that occured from 192 down to 128 bits
+      if (!(exact192)) {
+        if (product[3] == prev128) {
+          // We truncated the high bits - real value is greater than the rounded value
+          this.rounding = 1;
+        } else {
+          // We added 1 lsb - real value is lower than the rounded value
+          this.rounding = -1;
+        }
+      }
     }
   }
 

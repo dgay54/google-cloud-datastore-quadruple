@@ -310,26 +310,10 @@ public final class Quadruple implements Comparable<Quadruple> {
     byte[] digitsCopy = new byte[j];
     System.arraycopy(digits, 0, digitsCopy, 0, j);
     QuadrupleBuilder parsed = QuadrupleBuilder.parseDecimal(digitsCopy, exponent);
-
-    int quadrupleExponent = parsed.exponent;
-    long mantHi = parsed.mantHi;
-    long mantLo = parsed.mantLo;
-    if (avoidDoubleCollisions && mantLo == 0 && (mantHi & 0xfff) == 0 && parsed.rounding != 0) {
-      if (parsed.rounding > 0) {
-        mantLo = 1;
-      } else {
-        mantLo = -1;
-        if (mantHi == 0) {
-          // This is most likely unreachable, as it would require a decimal number that rounds up to
-          // an exact power of 2 when converted.
-          quadrupleExponent--;
-          mantHi = -1;
-        } else {
-          mantHi--;
-        }
-      }
+    if (avoidDoubleCollisions) {
+      parsed.avoidDecimal128CollisionsWithDouble();
     }
-    return new Quadruple(negative, quadrupleExponent, mantHi, mantLo);
+    return new Quadruple(negative, parsed.exponent, parsed.mantHi, parsed.mantLo);
   }
 
   private static final int bias(int exponent) {

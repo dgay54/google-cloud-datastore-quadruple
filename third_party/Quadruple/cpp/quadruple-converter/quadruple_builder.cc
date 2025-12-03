@@ -281,6 +281,7 @@ namespace cloud_datastore {
     this->exponent = 0;
     this->mantHi = 0LL;
     this->mantLo = 0LL;
+    this->rounding = 0;
 
     // Finds numeric value of the decimal mantissa
     std::array<uint64_t,6>& mantissa = this->buffer6x32C;
@@ -306,6 +307,33 @@ namespace cloud_datastore {
     double exp2 = findBinaryExponent(exp10, mantissa);
     // Finds binary mantissa and possible exponent correction. Fills the fields.
     findBinaryMantissa(exp10, exp2, mantissa);
+  }
+
+  // Flip the result of parse to round to the other closest 128-bit Quadruple
+  void QuadrupleBuilder::invertRounding() {
+    if (this->rounding != 0) {
+      if (this->rounding > 0) {
+        this->mantLo += 1LL;
+        if (this->mantLo == 0LL) {
+          this->mantHi += 1LL;
+          if (this->mantHi == 0LL) {
+            this->exponent += 1;
+          }
+        }
+      } else {
+        if (this->mantLo == 0LL) {
+          this->mantLo = 0xFFFFFFFFFFFFFFFFLL;
+          if (this->mantHi == 0LL) {
+            this->exponent -= 1;
+            this->mantHi = 0xFFFFFFFFFFFFFFFFLL;
+          } else {
+            this->mantHi -= 1LL;
+          }
+        } else {
+          this->mantLo -= 1LL;
+        }
+      }
+    }
   }
 
   int32_t QuadrupleBuilder::parseMantissa(std::vector<uint8_t>& digits,std::array<uint64_t,6>& mantissa) {
@@ -434,6 +462,9 @@ namespace cloud_datastore {
     if (exp2 <= 0) {
       return;
     }
+    // true if bits 128-191 are all 0, i.e., the conversion appears exact to 192-bit precision
+    bool exact192 = product[4] == 0LL && product[5] == 0LL;
+    uint64_t prev128 = product[3];
     exp2 += roundUp(product); // round up, may require exponent correction
 
     if ((static_cast<uint64_t>(exp2)) >= EXPONENT_OF_INFINITY) {
@@ -442,6 +473,16 @@ namespace cloud_datastore {
       this->exponent = (static_cast<uint32_t>(exp2));
       this->mantHi = (static_cast<uint64_t>((product[0] << 32LL) + product[1]));
       this->mantLo = (static_cast<uint64_t>((product[2] << 32LL) + product[3]));
+      // Report in rounding field the direction of the rounding that occured from 192 down to 128 bits
+      if (!(exact192)) {
+        if (product[3] == prev128) {
+          // We truncated the high bits - real value is greater than the rounded value
+          this->rounding = 1;
+        } else {
+          // We added 1 lsb - real value is lower than the rounded value
+          this->rounding = -1;
+        }
+      }
     }
   }
 

@@ -30,6 +30,9 @@ class QuadrupleBuilder(object):
     q.parse([ord(c) - 48 for c in digits], exp10)
     return q
 
+  def avoidDecimal128CollisionsWithDouble(self):
+    self.doAvoidDecimal128CollisionsWithDouble()
+
 
 
   # 2^192 = 6.277e57, so the 58-th digit after point may affect the result

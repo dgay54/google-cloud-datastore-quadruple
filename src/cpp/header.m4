@@ -34,6 +34,10 @@ public:
     parse(digits, exp10);
   }
 
+  void avoidDecimal128CollisionsWithDouble() {
+    doAvoidDecimal128CollisionsWithDouble();
+  }
+
   # The fields containing the value of the instance
   uint32_t exponent;
   uint64_t mantHi;

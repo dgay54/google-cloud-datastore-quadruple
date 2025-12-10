@@ -96,7 +96,7 @@ Quadruple::Quadruple(int64_t x) {
   }
 }
 
-bool Quadruple::Parse(std::string s) {
+bool Quadruple::Parse(std::string s, bool avoidDoubleCollisions) {
   if (s == "NaN") {
     negative_ = false;
     exponent_ = kInfiniteExponent;
@@ -176,6 +176,9 @@ bool Quadruple::Parse(std::string s) {
 
   QuadrupleBuilder parsed;
   parsed.parseDecimal(digits_copy, exponent);
+  if (avoidDoubleCollisions) {
+    parsed.avoidDecimal128CollisionsWithDouble();
+  }
   negative_ = negative;
   exponent_ = parsed.exponent;
   mantissa_hi_ = parsed.mantHi;

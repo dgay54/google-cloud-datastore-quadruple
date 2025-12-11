@@ -261,4 +261,13 @@ describe('QuadrupleTest', function () {
       Quadruple.fromString('1000000000000e-10'),
     );
   });
+
+  it('fromStringNoDoubleCollisions', function() {
+    expectEquals(Quadruple.fromNumber(20), Quadruple.fromStringNoDoubleCollisions('20'));
+    const roundsUp = makeDouble(false, -1, 15877n);
+    const roundedUp = roundsUp.toPrecision(34);
+    expectEquals(Quadruple.fromNumber(roundsUp), Quadruple.fromString(roundedUp));
+    expectLessThan(Quadruple.fromNumber(roundsUp), Quadruple.fromStringNoDoubleCollisions(roundedUp));
+  });
+
 });

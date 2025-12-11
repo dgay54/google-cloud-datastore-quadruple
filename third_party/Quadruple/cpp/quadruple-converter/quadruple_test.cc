@@ -18,8 +18,10 @@
 
 #include <cmath>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <random>
+#include <string>
 #include <gtest/gtest.h>
 
 namespace cloud_datastore {
@@ -30,6 +32,10 @@ Quadruple kPlusInfinity(INFINITY);
 Quadruple kNaN(NAN);
 Quadruple kPlusZero(0.0);
 Quadruple kMinusZero(-0.0);
+
+static void ExpectEqual(Quadruple q1, Quadruple q2) {
+  EXPECT_EQ(q1.Compare(q2), 0) << q1.DebugString() << " == " << q2.DebugString();
+}
 
 static void ExpectLessThan(Quadruple q1, Quadruple q2) {
   EXPECT_EQ(q1.Compare(q1), 0) << q1.DebugString() << " == itself";
@@ -65,7 +71,7 @@ TEST(QuadrupleTest, Zero) {
   EXPECT_EQ(static_cast<double>(kMinusZero), 0.0);
   EXPECT_EQ(std::signbit(static_cast<double>(kPlusZero)), false);
   EXPECT_EQ(std::signbit(static_cast<double>(kMinusZero)), true);
-  EXPECT_EQ(Quadruple64(0).Compare(kPlusZero), 0);
+  ExpectEqual(Quadruple64(0), kPlusZero);
 
   ExpectLessThan(kMinusZero, kPlusZero);
   ExpectLessThan(kMinusZero, Quadruple64(0));
@@ -87,7 +93,7 @@ TEST(QuadrupleTest, RandomQuadruple) {
                                (static_cast<uint32_t>(exponent) + 0x7fffffffU);
     Quadruple q(exponentAndSign, mantissa << 12, 0);
     double d = ldexp(1 + ldexp(mantissa, -52), exponent) * (negative ? -1 : 1);
-    EXPECT_EQ(q.Compare(Quadruple(d)), 0) << q.DebugString() << " == " << d;
+    ExpectEqual(q, Quadruple(d));
 
     // Make some nearby numbers.
     Quadruple q_plus1(exponentAndSign, mantissa << 12, 1);
@@ -145,7 +151,7 @@ TEST(QuadrupleTest, RandomDouble) {
 TEST(QuadrupleTest, MinMaxInt64) {
   Quadruple min_int64(std::numeric_limits<int64_t>::min());
   Quadruple nearly_min_int64(std::numeric_limits<int64_t>::min() + 1);
-  EXPECT_EQ(min_int64.Compare(Quadruple(-pow(2.0, 63))), 0);
+  ExpectEqual(min_int64, Quadruple(-pow(2.0, 63)));
   ExpectLessThan(min_int64, nearly_min_int64);
 
   Quadruple max_int64(std::numeric_limits<int64_t>::max());
@@ -201,7 +207,7 @@ TEST(QuadrupleTest, RandomLong) {
     } else if (i64 > other) {
       ExpectLessThan(Quadruple(other), q);
     } else {
-      EXPECT_EQ(Quadruple(other).Compare(q), 0);
+      ExpectEqual(Quadruple(other), q);
     }
   }
 }
@@ -228,52 +234,66 @@ TEST(QuadrupleTest, ParseInvalid) {
 TEST(QuadrupleTest, ParseSpecial) {
   Quadruple q;
   EXPECT_TRUE(q.Parse("NaN"));
-  EXPECT_EQ(q.Compare(kNaN), 0);
+  ExpectEqual(q, kNaN);
 
   EXPECT_TRUE(q.Parse("Infinity"));
-  EXPECT_EQ(q.Compare(kPlusInfinity), 0);
+  ExpectEqual(q, kPlusInfinity);
 
   EXPECT_TRUE(q.Parse("+Infinity"));
-  EXPECT_EQ(q.Compare(kPlusInfinity), 0);
+  ExpectEqual(q, kPlusInfinity);
 
   EXPECT_TRUE(q.Parse("-Infinity"));
-  EXPECT_EQ(q.Compare(kMinusInfinity), 0);
+  ExpectEqual(q, kMinusInfinity);
 }
 
 TEST(Quadruple, Parse) {
   Quadruple q;
   EXPECT_TRUE(q.Parse("2"));
-  EXPECT_EQ(q.Compare(Quadruple(2.0)), 0);
+  ExpectEqual(q, Quadruple(2.0));
 
   EXPECT_TRUE(q.Parse("+22"));
-  EXPECT_EQ(q.Compare(Quadruple(22.0)), 0);
+  ExpectEqual(q, Quadruple(22.0));
 
   EXPECT_TRUE(q.Parse("-25"));
-  EXPECT_EQ(q.Compare(Quadruple(-25.0)), 0);
+  ExpectEqual(q, Quadruple(-25.0));
 
   EXPECT_TRUE(q.Parse("1.5"));
-  EXPECT_EQ(q.Compare(Quadruple(1.5)), 0);
+  ExpectEqual(q, Quadruple(1.5));
 
   EXPECT_TRUE(q.Parse(".5"));
-  EXPECT_EQ(q.Compare(Quadruple(0.5)), 0);
+  ExpectEqual(q, Quadruple(0.5));
 
   EXPECT_TRUE(q.Parse("12."));
-  EXPECT_EQ(q.Compare(Quadruple(12.0)), 0);
+  ExpectEqual(q, Quadruple(12.0));
 
   EXPECT_TRUE(q.Parse("42e1"));
-  EXPECT_EQ(q.Compare(Quadruple(420.0)), 0);
+  ExpectEqual(q, Quadruple(420.0));
 
   EXPECT_TRUE(q.Parse("4.2e3"));
-  EXPECT_EQ(q.Compare(Quadruple(4200.0)), 0);
+  ExpectEqual(q, Quadruple(4200.0));
 
   EXPECT_TRUE(q.Parse("4.1e+3"));
-  EXPECT_EQ(q.Compare(Quadruple(4100.0)), 0);
+  ExpectEqual(q, Quadruple(4100.0));
 
   EXPECT_TRUE(q.Parse("420e-1"));
-  EXPECT_EQ(q.Compare(Quadruple(42.0)), 0);
+  ExpectEqual(q, Quadruple(42.0));
 
   EXPECT_TRUE(q.Parse("1000000000000e-10"));
-  EXPECT_EQ(q.Compare(Quadruple(100.0)), 0);
+  ExpectEqual(q, Quadruple(100.0));
+}
+
+TEST(Quadruple, ParseAvoidingCollisions) {
+  Quadruple q;
+  EXPECT_TRUE(q.ParseAvoidingCollisions("20"));
+  ExpectEqual(q, Quadruple(20.0));
+
+  double roundsUp = ldexp(1 + ldexp(15877, -52), -1);
+  char decimalRoundsUp[64];
+  sprintf(decimalRoundsUp, "%.33e", roundsUp);
+  EXPECT_TRUE(q.Parse(decimalRoundsUp));
+  ExpectEqual(q, Quadruple(roundsUp));
+  EXPECT_TRUE(q.ParseAvoidingCollisions(decimalRoundsUp));
+  ExpectLessThan(Quadruple(roundsUp), q);
 }
 
 }  // namespace

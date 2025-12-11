@@ -33,3 +33,4 @@ class TestQuadupleBuilder(unittest.TestCase):
     self.assertEqual(q.mantHi, mant_hi)
     self.assertEqual(q.mantLo, mant_lo)
     self.assertEqual(q.exponent, exponent)
+

@@ -32,6 +32,7 @@ class TestQuadupleBuilder(unittest.TestCase):
     self.assertEqual(q.mantHi, mant_hi)
     self.assertEqual(q.mantLo, mant_lo)
     self.assertEqual(q.exponent, exponent)
+
   def test_edge(self):
     # Infinity.
     self.check("1", 1_000_000_000, 0, 0, 0xFFFFFFFF);

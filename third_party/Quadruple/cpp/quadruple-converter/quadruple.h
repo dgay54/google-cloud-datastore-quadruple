@@ -55,7 +55,19 @@ class Quadruple {
   // - NaN, Infinity, +Infinity, -Infinity for the corresponding constants
   // - a string matching [+-]?[0-9]*(.[0-9]*)?([eE][+-]?[0-9]+)?
   //   with the exponent at most 9 characters, and the whole string not empty
-  bool Parse(std::string s);
+  bool Parse(std::string s) { return Parse(s, false); }
+
+  // Updates this Quadruple with the decimal number specified in s,
+  // avoiding collisions with double. See Parse() for the input format
+  // and result.
+  //
+  // There are doubles D and Decimal128 numbers M with M != D that have the same
+  // Quadruple representation (example: D = 0.5 + 15877 * 2^-53, M =
+  // Decimal128.fromDouble(D)). To allow correct comparison results of doubles
+  // and Decimal128 using Quadruple, this function will increase or decrease the
+  // lsb of the result of Quadruple(M) to restore the correct order of
+  // comparisons with D when such collisions occur.
+  bool ParseAvoidingCollisions(std::string s) { return Parse(s, true); }
 
   // Rounds out-of-range numbers to +/- 0/HUGE_VAL. Rounds towards 0.
   explicit operator double() const;
@@ -95,9 +107,10 @@ class Quadruple {
   uint32_t exponent_;
   uint64_t mantissa_hi_;
   uint64_t mantissa_lo_;
+
+  bool Parse(std::string s, bool avoidDoubleCollisions);
 };
 
 }  // namespace cloud_datastore
 
 #endif  // CLOUD_DATASTORE_COMMON_QUADRUPLE_H_
-

@@ -33,6 +33,12 @@ void check(const std::string& digits,
   EXPECT_EQ(parser.mantHi, mant_hi) << name + " (hi)";
   EXPECT_EQ(parser.mantLo, mant_lo) << name + " (lo)";
   EXPECT_EQ(parser.exponent, exponent) << name + " (exp)";
+
+  // avoidDecimal128CollisionsWithDouble doesn't change any of the test results.
+  parser.avoidDecimal128CollisionsWithDouble();
+  EXPECT_EQ(parser.mantHi, mant_hi) << name + " (hi)";
+  EXPECT_EQ(parser.mantLo, mant_lo) << name + " (lo)";
+  EXPECT_EQ(parser.exponent, exponent) << name + " (exp)";
 }
 
 TEST(QuadrupleBuilderTest, edge) {

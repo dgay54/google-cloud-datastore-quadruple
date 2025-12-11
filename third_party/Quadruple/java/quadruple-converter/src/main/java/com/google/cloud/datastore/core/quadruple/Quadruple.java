@@ -241,6 +241,16 @@ public final class Quadruple implements Comparable<Quadruple> {
     return fromString(s, false);
   }
 
+  /**
+   * Converts a decimal number to a {@link Quadruple}, avoiding collisions with {@code double}. See
+   * {@link #fromString} for the supported format.
+   *
+   * <p>There are doubles D and Decimal128 numbers M with M != D that have the same Quadruple
+   * representation (example: D = 0.5 + 15877 * 2^-53, M = Decimal128.fromDouble(D)). To
+   *  allow correct comparison results of doubles and Decimal128 using Quadruple, this
+   *  function will increase or decrease the lsb of the result of Quadruple(M) to restore the
+   *  correct order of comparisons with D when such collisions occur.
+   */
   public static Quadruple fromStringNoDoubleCollisions(String s) {
     return fromString(s, true);
   }

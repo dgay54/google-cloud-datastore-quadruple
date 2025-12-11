@@ -66,6 +66,10 @@ export class QuadrupleBuilder {
     return q;
   }
 
+  avoidDecimal128CollisionsWithDouble() {
+    this.doAvoidDecimal128CollisionsWithDouble();
+  }
+
   # The fields containing the value of the instance
   exponent: number = 0;
   mantHi: bigint = 0n;

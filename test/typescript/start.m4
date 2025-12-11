@@ -31,6 +31,12 @@ function check(mantissa: string, exp10: number, mantHi: bigint, mantLo: bigint, 
   expect(quadruple.mantHi).toBe(mantHi);
   expect(quadruple.mantLo).toBe(mantLo);
   expect(quadruple.exponent).toBe(exponent);
+
+  // avoidDecimal128CollisionsWithDouble doesn't change any of the test results.
+  quadruple.avoidDecimal128CollisionsWithDouble();
+  expect(quadruple.mantHi).toBe(mantHi);
+  expect(quadruple.mantLo).toBe(mantLo);
+  expect(quadruple.exponent).toBe(exponent);
 }
 
 describe("QuadrupleBuilderTest", function() {

@@ -78,3 +78,6 @@ class QuadrupleBuilder(object):
     q.parse([ord(c) - 48 for c in digits], exp10)
     return q
 
+  def avoidDecimal128CollisionsWithDouble(self):
+    self.doAvoidDecimal128CollisionsWithDouble()
+

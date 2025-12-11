@@ -204,6 +204,24 @@ export class Quadruple {
    * </ul>
    */
   static fromString(s: string): Quadruple {
+    return Quadruple.fromStringInternal(s, false);
+  }
+
+  /**
+   * Converts a decimal number to a {@link Quadruple}, avoiding collisions with {@code float64}. See
+   * {@link #fromString} for the supported format.
+   *
+   * <p>There are doubles D and Decimal128 numbers M with M != D that have the same Quadruple
+   * representation (example: D = 0.5 + 15877 * 2^-53, M = Decimal128.fromDouble(D)). To
+   *  allow correct comparison results of doubles and Decimal128 using Quadruple, this
+   *  function will increase or decrease the lsb of the result of Quadruple(M) to restore the
+   *  correct order of comparisons with D when such collisions occur.
+   */
+  static fromStringNoDoubleCollisions(s: string): Quadruple {
+    return Quadruple.fromStringInternal(s, true);
+  }
+
+  private static fromStringInternal(s: string, avoidDoubleCollisions: boolean): Quadruple {
     if (s === 'NaN') {
       return Quadruple.NaN;
     }
@@ -260,6 +278,9 @@ export class Quadruple {
       throw new Error('Invalid number ' + s);
     }
     const parsed = QuadrupleBuilder.parseDecimal(digits.slice(0, j), exponent);
+    if (avoidDoubleCollisions) {
+      parsed.avoidDecimal128CollisionsWithDouble();
+    }
     return new Quadruple(
       negative,
       parsed.exponent,
